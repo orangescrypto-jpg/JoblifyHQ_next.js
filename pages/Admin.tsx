@@ -1,4 +1,4 @@
-'use client';
+use client';
 import type { FormEvent } from 'react';
 import { useState, useEffect } from 'react';
 import {
@@ -184,7 +184,7 @@ function SalaryModal({ isOpen, onClose, onSubmit, initial, loading }: SalaryModa
 // ── Main Admin component ─────────────────────────────────────────────────────
 export default function Admin() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab]     = useState('job');
+  const [activeTab, setActiveTab]     = useState<'job' | 'scholarship' | 'blog' | 'applications' | 'salaries'>('job');
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
@@ -870,7 +870,7 @@ export default function Admin() {
         <AdminFormModal
           isOpen={modalOpen}
           onClose={() => { setModalOpen(false); setEditItem(null); }}
-          type={activeTab}
+          type={activeTab as 'job' | 'scholarship' | 'blog'}
           initialData={editItem}
           onSubmit={handleFormSubmit}
         />
