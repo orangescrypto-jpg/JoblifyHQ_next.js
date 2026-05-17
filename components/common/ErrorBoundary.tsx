@@ -16,7 +16,6 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   // Explicit declarations satisfy TS when @types/react is not locally available
   declare state: ErrorBoundaryState;
   declare props: ErrorBoundaryProps & { children?: ReactNode };
-  declare setState: (state: Partial<ErrorBoundaryState>) => void;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
