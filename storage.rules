@@ -1,0 +1,62 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    function isValidDocument() {
+      return request.resource.contentType.matches('application/pdf')
+        && request.resource.size < 10 * 1024 * 1024; // 10MB max
+    }
+
+    // ─── CV / Resume Uploads ─────────────────────────────────────────────────
+
+    match /cvs/{userId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) && isValidDocument();
+      allow delete: if isOwner(userId);
+    }
+
+    // ─── Profile Photos ───────────────────────────────────────────────────────
+
+    match /profile_photos/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(userId) && isValidImage();
+      allow delete: if isOwner(userId);
+    }
+
+    // ─── Company Logos ────────────────────────────────────────────────────────
+
+    match /logos/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn() && isOwner(userId) && isValidImage();
+      allow delete: if isOwner(userId);
+    }
+
+    // ─── Blog Cover Images ────────────────────────────────────────────────────
+
+    match /blog/{fileName} {
+      allow read: if true;
+      allow write: if false; // Admin only via Firebase Console / Cloud Functions
+    }
+
+    // ─── Deny everything else ─────────────────────────────────────────────────
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
