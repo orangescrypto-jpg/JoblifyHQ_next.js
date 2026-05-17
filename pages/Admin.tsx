@@ -392,7 +392,7 @@ export default function Admin() {
       // Fetch salary data directly without relying on activeTab closure
       const snap = await getDocs(collection(db, 'salary_data'));
       const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      (rows as any[]).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setItems(rows);
     } catch (err) {
       console.error(err);
