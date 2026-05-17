@@ -24,8 +24,8 @@ export default function Blog() {
 
   const filtered = data.filter(p => {
     const matchesSearch =
-      p.title?.toLowerCase().includes(search.toLowerCase()) ||
-      p.excerpt?.toLowerCase().includes(search.toLowerCase());
+      String(p.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      String(p.excerpt ?? "").toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !category || category === 'All' || p.category === category;
     return matchesSearch && matchesCategory;
   });
