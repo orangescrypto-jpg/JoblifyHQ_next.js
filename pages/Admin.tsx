@@ -60,7 +60,7 @@ function SalaryModal({ isOpen, onClose, onSubmit, initial, loading }: SalaryModa
 
   if (!isOpen) return null;
 
-  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+  const set = (k: string, v: string) => setForm((p: Record<string, string>) => ({ ...p, [k]: v }));
   const availableCities = form.country ? ((CITIES_BY_COUNTRY as Record<string, string[]>)[form.country] || []) : [];
 
   const handleSubmit = (e: FormEvent) => {
@@ -101,7 +101,7 @@ function SalaryModal({ isOpen, onClose, onSubmit, initial, loading }: SalaryModa
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
-              <select value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value, city: '' }))}
+              <select value={form.country} onChange={e => setForm((p: Record<string, string>) => ({ ...p, country: e.target.value, city: '' }))}
                 className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 <option value="">Select country</option>
                 {AFRICAN_COUNTRIES.map(c => (
@@ -249,10 +249,10 @@ export default function Admin() {
   useEffect(() => { fetchItems(); }, [activeTab]);
 
   const handleCreate    = () => { setEditItem(null); setModalOpen(true); };
-  const handleEdit      = (item: Record<string, unknown>) => { setEditItem(item); setModalOpen(true); };
-  const handleDeleteClick = (item: Record<string, unknown>) => { setDeleteTarget(item); setConfirmDelete(true); };
+  const handleEdit      = (item: any) => { setEditItem(item); setModalOpen(true); };
+  const handleDeleteClick = (item: any) => { setDeleteTarget(item); setConfirmDelete(true); };
 
-  const handleBoost = async (item: Record<string, unknown>) => {
+  const handleBoost = async (item: any) => {
     try {
       const colName = activeTab === 'job' ? 'jobs' : 'scholarships';
       const ref = doc(db, colName, item.id as string);
@@ -352,8 +352,8 @@ export default function Admin() {
   const handleAppStatusChange = async (appId: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'applications', appId), { status: newStatus, updatedAt: Timestamp.now() });
-      setItems(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
-      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status: newStatus } : prev);
+      setItems((prev: any[]) => prev.map((a: any) => a.id === appId ? { ...a, status: newStatus } : a));
+      if (selectedApp?.id === appId) setSelectedApp((prev: any) => prev ? { ...prev, status: newStatus } : prev);
       showToast('Status updated');
     } catch {
       showToast('Failed to update status', 'error');
