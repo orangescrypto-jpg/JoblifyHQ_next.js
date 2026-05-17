@@ -185,21 +185,21 @@ function SalaryModal({ isOpen, onClose, onSubmit, initial, loading }: SalaryModa
 export default function Admin() {
   const { user } = useAuth();
   const [activeTab, setActiveTab]     = useState('job');
-  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
-  const [editItem, setEditItem] = useState<Record<string, unknown> | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null);
+  const [editItem, setEditItem] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
   // Applications tab state
-  const [selectedApp, setSelectedApp] = useState<Record<string, unknown> | null>(null);
+  const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [appFilterStatus, setAppFilterStatus] = useState('all');
   const [appSearch, setAppSearch]           = useState('');
   // Salary tab state
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
-  const [editSalary, setEditSalary] = useState<Record<string, unknown> | null>(null);
+  const [editSalary, setEditSalary] = useState<any | null>(null);
   const [salarySearch, setSalarySearch]       = useState('');
 
   const showToast = (msg: string, type = 'success') => {
@@ -353,7 +353,7 @@ export default function Admin() {
     try {
       await updateDoc(doc(db, 'applications', appId), { status: newStatus, updatedAt: Timestamp.now() });
       setItems(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
-      if (selectedApp?.id === appId) setSelectedApp(prev => ({ ...prev, status: newStatus }));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status: newStatus } : prev);
       showToast('Status updated');
     } catch {
       showToast('Failed to update status', 'error');
@@ -385,7 +385,7 @@ export default function Admin() {
   };
 
   const filteredApps = items.filter(app => {
-    const statusMatch = appFilterStatus === 'all' || app.status === appFilterStatus;
+    const statusMatch = appFilterStatus === 'all' || (app.status as string) === appFilterStatus;
     const searchMatch = appSearch === '' ||
       String(app.userName ?? "").toLowerCase().includes(appSearch.toLowerCase()) ||
       String(app.userEmail ?? "").toLowerCase().includes(appSearch.toLowerCase()) ||
@@ -654,8 +654,8 @@ export default function Admin() {
                             {(app.company as string) && <span className="text-gray-400"> · {app.company as string}</span>}
                           </p>
                         </div>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${(APP_STATUS_STYLES as Record<string, string>)[app.status as string] || APP_STATUS_STYLES.pending}`}>
-                          {app.status || 'pending'}
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${APP_STATUS_STYLES[(app.status as string) || 'pending'] || APP_STATUS_STYLES.pending}`}>
+                          {String(app.status || 'pending')}
                         </span>
                       </div>
                       {(app.coverNote as string) && (
