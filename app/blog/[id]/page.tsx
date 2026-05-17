@@ -1,4 +1,3 @@
-'use client';
 import type { Metadata } from 'next';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
