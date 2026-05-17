@@ -453,8 +453,8 @@ export default function Admin() {
     String(s.country ?? "").toLowerCase().includes(salarySearch.toLowerCase())
   );
 
-  const totalViews        = items.reduce((sum, i) => sum + (i.views || 0), 0);
-  const totalApplications = items.reduce((sum, i) => sum + (i.applications || 0), 0);
+  const totalViews        = items.reduce((sum: number, i: any) => sum + (Number(i.views) || 0), 0);
+  const totalApplications = items.reduce((sum: number, i: any) => sum + (Number(i.applications) || 0), 0);
   const totalFeatured     = items.filter(i => i.isFeatured).length;
 
   const columns = {
