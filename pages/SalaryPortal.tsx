@@ -38,8 +38,8 @@ export default function SalaryPortal() {
 
   const filtered = salaries.filter(s => {
     const searchMatch = !search ||
-      s.role?.toLowerCase().includes(search.toLowerCase()) ||
-      s.industry?.toLowerCase().includes(search.toLowerCase());
+      String(s.role ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      String(s.industry ?? "").toLowerCase().includes(search.toLowerCase());
     const countryMatch = !countryFilter || s.country === countryFilter;
     const cityMatch = !cityFilter || s.city === cityFilter;
     const expMatch = !expFilter || s.experience === expFilter;
