@@ -392,7 +392,7 @@ export default function Admin() {
       // Fetch salary data directly without relying on activeTab closure
       const snap = await getDocs(collection(db, 'salary_data'));
       const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      (rows as any[]).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setItems(rows);
     } catch (err) {
       console.error(err);
@@ -440,17 +440,17 @@ export default function Admin() {
   const filteredApps = items.filter(app => {
     const statusMatch = appFilterStatus === 'all' || app.status === appFilterStatus;
     const searchMatch = appSearch === '' ||
-      app.userName?.toLowerCase().includes(appSearch.toLowerCase()) ||
-      app.userEmail?.toLowerCase().includes(appSearch.toLowerCase()) ||
-      app.title?.toLowerCase().includes(appSearch.toLowerCase());
+      String(app.userName ?? "").toLowerCase().includes(appSearch.toLowerCase()) ||
+      String(app.userEmail ?? "").toLowerCase().includes(appSearch.toLowerCase()) ||
+      String(app.title ?? "").toLowerCase().includes(appSearch.toLowerCase());
     return statusMatch && searchMatch;
   });
 
   const filteredSalaries = items.filter(s =>
     !salarySearch ||
-    s.role?.toLowerCase().includes(salarySearch.toLowerCase()) ||
-    s.industry?.toLowerCase().includes(salarySearch.toLowerCase()) ||
-    s.country?.toLowerCase().includes(salarySearch.toLowerCase())
+    String(s.role ?? "").toLowerCase().includes(salarySearch.toLowerCase()) ||
+    String(s.industry ?? "").toLowerCase().includes(salarySearch.toLowerCase()) ||
+    String(s.country ?? "").toLowerCase().includes(salarySearch.toLowerCase())
   );
 
   const totalViews        = items.reduce((sum, i) => sum + (i.views || 0), 0);
