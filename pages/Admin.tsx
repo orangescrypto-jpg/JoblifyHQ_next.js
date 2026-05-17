@@ -22,7 +22,7 @@ const TABS = [
   { key: 'salaries',    label: 'Salary Data',   icon: FiDollarSign },
 ];
 
-const APP_STATUS_STYLES = {
+const APP_STATUS_STYLES: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   New:       'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   Viewed:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -719,7 +719,7 @@ export default function Admin() {
                       <select
                         value={(selectedApp.status as string) || 'pending'}
                         onChange={e => handleAppStatusChange(selectedApp.id as string, e.target.value)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${(APP_STATUS_STYLES as Record<string, string>)[selectedApp.status as string] || APP_STATUS_STYLES.pending}`}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${APP_STATUS_STYLES[selectedApp.status as string] || APP_STATUS_STYLES.pending}`}
                       >
                         <option value="pending">Pending</option>
                         <option value="New">New</option>
