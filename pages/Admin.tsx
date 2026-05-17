@@ -622,7 +622,7 @@ export default function Admin() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredSalaries.map(s => (
-                    <tr key={s.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                    <tr key={s.id as string} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white max-w-[160px] truncate">
                         {s.role || '—'}
                       </td>
@@ -730,7 +730,7 @@ export default function Admin() {
           ) : (
             <div className="grid gap-4">
               {filteredApps.map(app => (
-                <div key={app.id} className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                <div key={app.id as string} className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -904,7 +904,7 @@ export default function Admin() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {items.map(item => (
-                    <tr key={item.id}
+                    <tr key={item.id as string}
                       className={`bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition ${item.isFeatured ? 'border-l-4 border-yellow-400' : ''}`}>
                       {(columns as Record<string, string[]>)[activeTab]?.map(col => (
                         <td key={col} className="px-4 py-3 text-gray-800 dark:text-gray-200 max-w-[180px] truncate">
