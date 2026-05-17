@@ -20,7 +20,7 @@ const TABS = [
   { key: 'blog',        label: 'Blog Posts',    icon: FiFileText   },
   { key: 'applications',label: 'Applications',  icon: FiUsers      },
   { key: 'salaries',    label: 'Salary Data',   icon: FiDollarSign },
-];
+] as const;
 
 const APP_STATUS_STYLES: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
