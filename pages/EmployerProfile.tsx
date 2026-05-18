@@ -57,7 +57,7 @@ export default function EmployerProfile() {
 
       {/* Back */}
       <button
-        onClick={() => router.push(-1)}
+        onClick={() => router.back()}
         className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 transition"
       >
         <FiArrowLeft size={16} /> Back

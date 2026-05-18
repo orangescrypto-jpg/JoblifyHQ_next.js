@@ -16,8 +16,8 @@ const HOST_COUNTRIES = [
 
 
 export default function Scholarships() {
-  const [allScholarships, setAllScholarships] = useState([]);
-  const [displayScholarships, setDisplayScholarships] = useState([]);
+  const [allScholarships, setAllScholarships] = useState<any[]>([]);
+  const [displayScholarships, setDisplayScholarships] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [fundingFilter, setFundingFilter] = useState('');

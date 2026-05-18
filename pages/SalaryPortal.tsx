@@ -10,7 +10,7 @@ import {
 
 
 export default function SalaryPortal() {
-  const [salaries, setSalaries] = useState([]);
+  const [salaries, setSalaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
@@ -38,8 +38,8 @@ export default function SalaryPortal() {
 
   const filtered = salaries.filter(s => {
     const searchMatch = !search ||
-      String(s.role ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      String(s.industry ?? "").toLowerCase().includes(search.toLowerCase());
+      s.role?.toLowerCase().includes(search.toLowerCase()) ||
+      s.industry?.toLowerCase().includes(search.toLowerCase());
     const countryMatch = !countryFilter || s.country === countryFilter;
     const cityMatch = !cityFilter || s.city === cityFilter;
     const expMatch = !expFilter || s.experience === expFilter;

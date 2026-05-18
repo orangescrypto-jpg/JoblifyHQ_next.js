@@ -11,8 +11,8 @@ import { JOB_TYPES, AFRICAN_COUNTRIES, JOB_CATEGORIES, isWithin7Days } from '@/c
 
 export default function Jobs() {
   const [searchParams] = useSearchParams();
-  const [allJobs, setAllJobs] = useState([]); // raw from Firebase
-  const [displayJobs, setDisplayJobs] = useState([]); // filtered result
+  const [allJobs, setAllJobs] = useState<any[]>([]); // raw from Firebase
+  const [displayJobs, setDisplayJobs] = useState<any[]>([]); // filtered result
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '');

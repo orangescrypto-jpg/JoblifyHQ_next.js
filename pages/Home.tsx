@@ -18,11 +18,11 @@ import {
 } from '@/constants';
 
 export default function Home() {
-  const [featuredJobs, setFeaturedJobs] = useState([]);
-  const [latestJobs, setLatestJobs] = useState([]);
-  const [scholarships, setScholarships] = useState([]);
-  const [blogs, setBlogs] = useState([]);
-  const [salaries, setSalaries] = useState([]);
+  const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
+  const [latestJobs, setLatestJobs] = useState<any[]>([]);
+  const [scholarships, setScholarships] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [salaries, setSalaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [salaryLoading, setSalaryLoading] = useState(true);
 

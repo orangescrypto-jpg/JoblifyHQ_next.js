@@ -18,7 +18,7 @@ function isGlobalRemote(job) {
 }
 
 export default function GlobalRemoteJobs() {
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
