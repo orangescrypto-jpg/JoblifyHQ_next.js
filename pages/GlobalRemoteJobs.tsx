@@ -9,7 +9,7 @@ import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { JOB_CATEGORIES as CATEGORIES } from '@/constants';
 
 
-function isGlobalRemote(job) {
+function isGlobalRemote(job: any) {
   return (
     (job.location || '').toLowerCase().includes('remote') ||
     (job.type || '').toLowerCase().includes('remote') ||
