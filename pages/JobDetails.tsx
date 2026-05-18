@@ -53,10 +53,10 @@ export default function JobDetails() {
   const router = useRouter();
   const { user } = useAuth();
   const { savedJobs, toggleSaveJob } = useDashboard();
-  const [job, setJob] = useState<Record<string, unknown> | null>(null);
+  const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [applyOpen, setApplyOpen] = useState(false);
-  const [relatedJobs, setRelatedJobs] = useState([]);
+  const [relatedJobs, setRelatedJobs] = useState<any[]>([]);
 
   // Referral state
   const [showReferral, setShowReferral] = useState(false);
