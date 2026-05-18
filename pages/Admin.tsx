@@ -961,7 +961,7 @@ export default function Admin() {
         <AdminFormModal
           isOpen={modalOpen}
           onClose={() => { setModalOpen(false); setEditItem(null); }}
-          type={activeTab}
+          type={activeTab as any}
           initialData={editItem}
           onSubmit={handleFormSubmit}
         />
