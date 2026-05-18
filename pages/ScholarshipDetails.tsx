@@ -44,7 +44,7 @@ export default function ScholarshipDetails() {
   const router = useRouter();
   const { user } = useAuth();
   const { savedScholarships, toggleSaveScholarship } = useDashboard();
-  const [scholarship, setScholarship] = useState<Record<string, unknown> | null>(null);
+  const [scholarship, setScholarship] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [relatedScholarships, setRelatedScholarships] = useState<any[]>([]);
