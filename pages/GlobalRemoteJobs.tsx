@@ -25,7 +25,7 @@ export default function GlobalRemoteJobs() {
 
   useEffect(() => {
     setLoading(true);
-    getJobs({}, 300).then(({ jobs: allJobs }) => {
+    getJobs({}, 300).then(({ jobs: allJobs }: { jobs: any[] }) => {
       let remote = allJobs.filter(isGlobalRemote);
       remote.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
       setJobs(remote);
