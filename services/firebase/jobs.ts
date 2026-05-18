@@ -75,7 +75,7 @@ export const getJobById = async (id: string) => {
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) return null;
   updateDoc(docRef, { views: (docSnap.data().views || 0) + 1, updatedAt: Timestamp.now() }).catch(() => {});
-  return { id: docSnap.id, ...docSnap.data() };
+  return { id: docSnap.id, ...docSnap.data() } as any;
 };
 
 export const createJob = async (jobData, userId) => {
