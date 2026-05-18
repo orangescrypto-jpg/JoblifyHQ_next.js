@@ -73,7 +73,7 @@ export default function JobDetails() {
       setJob(data || null);
       setLoading(false);
       if (data?.category) {
-        getJobs({ category: data.category }, 10).then(({ jobs }) => {
+        getJobs({ category: data.category }, 10).then(({ jobs }: { jobs: any[] }) => {
           setRelatedJobs(jobs.filter(j => j.id !== id).slice(0, 2));
         }).catch(() => {});
       }
