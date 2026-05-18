@@ -28,7 +28,7 @@ export default function EmployerProfile() {
   useEffect(() => {
     if (!companyName) return;
     setLoading(true);
-    getJobs({}, 200).then(({ jobs: allJobs }) => {
+    getJobs({}, 200).then(({ jobs: allJobs }: { jobs: any[] }) => {
       const filtered = allJobs.filter(
         j => (j.company || '').toLowerCase() === companyName.toLowerCase()
       );
