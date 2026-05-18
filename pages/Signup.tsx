@@ -2,7 +2,8 @@
 import type { FormEvent } from 'react';
 
 import { useState } from 'react';
-import { Link, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import FormInput from '@/components/forms/FormInput';
 import SocialAuthButton from '@/components/common/SocialAuthButton';
