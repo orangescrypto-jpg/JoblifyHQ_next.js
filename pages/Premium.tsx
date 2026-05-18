@@ -121,6 +121,7 @@ export default function Premium() {
     customer: {
       email: user?.email || '',
       name: user?.displayName || user?.name || 'Joblify User',
+      phone_number: user?.phoneNumber || '',
     },
     customizations: {
       title: 'JoblifyHQ Premium',
