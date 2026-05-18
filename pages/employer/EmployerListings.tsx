@@ -24,7 +24,7 @@ function getFlag(country = '') {
 export default function EmployerListings() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
-  const [listings, setListings] = useState([]);
+  const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState({ open: false, item: null, type: '' });
   const [promoteModal, setPromoteModal] = useState({ open: false, listing: null });
@@ -167,8 +167,8 @@ export default function EmployerListings() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Total Listings', value: listings.length, color: 'text-gray-900 dark:text-white' },
-          { label: 'Total Views', value: listings.reduce((sum, l) => sum + (l.views || 0), 0), color: 'text-blue-600' },
-          { label: 'Total Applications', value: listings.reduce((sum, l) => sum + (l.applications || 0), 0), color: 'text-primary-600' },
+          { label: 'Total Views', value: listings.reduce((sum: number, l: any) => sum + (l.views || 0), 0), color: 'text-blue-600' },
+          { label: 'Total Applications', value: listings.reduce((sum: number, l: any) => sum + (l.applications || 0), 0), color: 'text-primary-600' },
         ].map(stat => (
           <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>

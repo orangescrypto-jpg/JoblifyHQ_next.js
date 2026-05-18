@@ -13,8 +13,8 @@ export default function EmployerDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({ totalViews: 0, totalApplications: 0, activeListings: 0 });
-  const [listings, setListings] = useState([]);
-  const [recentApps, setRecentApps] = useState([]);
+  const [listings, setListings] = useState<any[]>([]);
+  const [recentApps, setRecentApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,10 +27,10 @@ export default function EmployerDashboard() {
           getEmployerScholarships(user.uid)
         ]);
 
-        const totalViews = jobs.reduce((sum, j) => sum + (j.views || 0), 0) +
-                           scholarships.reduce((sum, s) => sum + (s.views || 0), 0);
-        const totalApplications = jobs.reduce((sum, j) => sum + (j.applications || 0), 0) +
-                                  scholarships.reduce((sum, s) => sum + (s.applications || 0), 0);
+        const totalViews = jobs.reduce((sum: number, j: any) => sum + (j.views || 0), 0) +
+                           scholarships.reduce((sum: number, s: any) => sum + (s.views || 0), 0);
+        const totalApplications = jobs.reduce((sum: number, j: any) => sum + (j.applications || 0), 0) +
+                                  scholarships.reduce((sum: number, s: any) => sum + (s.applications || 0), 0);
 
         setStats({ totalViews, totalApplications, activeListings: jobs.length + scholarships.length });
 

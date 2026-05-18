@@ -21,12 +21,12 @@ const isPremiumApplicant = (app) =>
 
 export default function EmployerApplications() {
   const { user } = useAuth();
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Record<string, unknown> | null>(null);
   const [filterJob, setFilterJob] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [jobTitles, setJobTitles] = useState([]);
+  const [jobTitles, setJobTitles] = useState<any[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
   const showToast = (msg, type = 'success') => {
