@@ -42,7 +42,7 @@ function RichDescription({ text }: { text: string }) {
 }
 
 
-function isActivelyHiring(createdAt) {
+function isActivelyHiring(createdAt: any) {
   if (!createdAt) return false;
   const posted = createdAt?.seconds ? new Date(createdAt.seconds * 1000) : new Date(createdAt);
   return (Date.now() - posted.getTime()) / (1000 * 60 * 60 * 24) <= 7;
