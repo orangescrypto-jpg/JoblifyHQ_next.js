@@ -18,7 +18,7 @@ function isActivelyHiring(jobs: any[]) {
 }
 
 export default function EmployerProfile() {
-  const { company } = useParams();
+  const params = useParams(); const company = params?.company as string;
   const router = useRouter();
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
