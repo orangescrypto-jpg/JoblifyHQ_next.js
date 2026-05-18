@@ -9,7 +9,6 @@ import {
   FiEye, FiFileText, FiTrendingUp, FiX,
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
-import type { UserTier } from '@/types';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 const PLANS = [
@@ -126,11 +125,12 @@ export default function Premium() {
     },
     customizations: {
       title: 'JoblifyHQ Premium',
+      description: 'Upgrade to JoblifyHQ Premium',
       logo: 'https://joblifyhq.com/logo.png',
     },
   });
 
-  const handleUpgrade = async (planId: UserTier | string) => {
+  const handleUpgrade = async (planId) => {
     if (!user) { router.push('/login'); return; }
     if (planId === 'free') return;
     if (isPremium && planId === user?.tier) return;
@@ -163,7 +163,7 @@ export default function Premium() {
               updatedAt: serverTimestamp(),
             });
             if (typeof updateUserProfile === 'function') {
-              await updateUserProfile({ tier: planId as UserTier });
+              await updateUserProfile({ tier: planId });
             }
             setSuccess(
               planId === 'premium-annual'
