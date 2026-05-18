@@ -40,7 +40,7 @@ function RichDescription({ text }: { text: string }) {
 }
 
 export default function ScholarshipDetails() {
-  const { id } = useParams();
+  const params = useParams(); const id = params?.id as string;
   const router = useRouter();
   const { user } = useAuth();
   const { savedScholarships, toggleSaveScholarship } = useDashboard();
