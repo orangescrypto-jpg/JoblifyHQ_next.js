@@ -53,7 +53,7 @@ export default function Home() {
     const fetchSalaries = async () => {
       try {
         const snap = await getDocs(collection(db, 'salary_data'));
-        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
         rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         setSalaries(rows.slice(0, 4));
       } catch {
