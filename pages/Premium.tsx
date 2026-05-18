@@ -116,6 +116,8 @@ export default function Premium() {
 
   const handleFlutterPayment = useFlutterwave({
     public_key: FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref: `joblify_${user?.uid || 'guest'}_${Date.now()}`,
+    amount: 0,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd,banktransfer',
     customer: {
@@ -125,7 +127,7 @@ export default function Premium() {
     },
     customizations: {
       title: 'JoblifyHQ Premium',
-      description: 'Unlock premium features on JoblifyHQ',
+      description: 'JoblifyHQ Premium Subscription',
       logo: 'https://joblifyhq.com/logo.png',
     },
   });
