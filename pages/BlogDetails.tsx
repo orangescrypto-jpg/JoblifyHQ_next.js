@@ -11,7 +11,7 @@ import { FiCalendar, FiUser, FiArrowLeft } from 'react-icons/fi';
 export default function BlogDetails() {
   const params = useParams(); const id = params?.id as string;
   const [post, setPost] = useState<Record<string, unknown> | null>(null);
-  const [related, setRelated] = useState([]);
+  const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
