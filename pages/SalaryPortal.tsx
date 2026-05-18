@@ -21,7 +21,7 @@ export default function SalaryPortal() {
   useEffect(() => {
     getDocs(collection(db, 'salary_data'))
       .then(snap => {
-        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const rows = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
         rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         setSalaries(rows);
       })

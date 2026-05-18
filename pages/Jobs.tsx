@@ -10,7 +10,7 @@ import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { JOB_TYPES, AFRICAN_COUNTRIES, JOB_CATEGORIES, isWithin7Days } from '@/constants';
 
 export default function Jobs() {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const [allJobs, setAllJobs] = useState<any[]>([]); // raw from Firebase
   const [displayJobs, setDisplayJobs] = useState<any[]>([]); // filtered result
   const [loading, setLoading] = useState(true);
