@@ -116,6 +116,8 @@ export default function Premium() {
 
   const handleFlutterPayment = useFlutterwave({
     public_key: FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref: `joblify_${user?.uid || 'guest'}_${Date.now()}`,
+    amount: 6400,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd,banktransfer',
     customer: {
@@ -130,7 +132,7 @@ export default function Premium() {
     },
   });
 
-  const handleUpgrade = async (planId) => {
+  const handleUpgrade = async (planId: string) => {
     if (!user) { router.push('/login'); return; }
     if (planId === 'free') return;
     if (isPremium && planId === user?.tier) return;
