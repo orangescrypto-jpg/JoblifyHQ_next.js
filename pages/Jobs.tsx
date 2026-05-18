@@ -14,9 +14,9 @@ export default function Jobs() {
   const [allJobs, setAllJobs] = useState<any[]>([]); // raw from Firebase
   const [displayJobs, setDisplayJobs] = useState<any[]>([]); // filtered result
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get('q') || '');
-  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '');
-  const [countryFilter, setCountryFilter] = useState(searchParams.get('country') || '');
+  const [search, setSearch] = useState(searchParams?.get('q') || '');
+  const [typeFilter, setTypeFilter] = useState(searchParams?.get('type') || '');
+  const [countryFilter, setCountryFilter] = useState(searchParams?.get('country') || '');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [activeHiringOnly, setActiveHiringOnly] = useState(false);
   const [globalRemoteOnly, setGlobalRemoteOnly] = useState(false);
