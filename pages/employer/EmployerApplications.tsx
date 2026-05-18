@@ -69,7 +69,7 @@ export default function EmployerApplications() {
           where('opportunityId', 'in', chunk)
         );
         const snap = await getDocs(q);
-        allApps = [...allApps, ...snap.docs.map(d => ({ id: d.id, ...d.data() }))];
+        allApps = [...allApps, ...snap.docs.map(d => ({ id: d.id, ...d.data() } as any))];
       }
 
       setApplications(sortApplicationsByBoost(allApps));

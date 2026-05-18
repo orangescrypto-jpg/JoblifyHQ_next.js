@@ -49,7 +49,7 @@ export default function EmployerDashboard() {
           where('opportunityId', 'in', allIds.slice(0, 10))
         );
         const appsSnap = await getDocs(appsQuery);
-        const appsData = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const appsData = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
         // Sort by appliedAt descending
         appsData.sort((a, b) => (b.appliedAt?.seconds || 0) - (a.appliedAt?.seconds || 0));
         setRecentApps(appsData.slice(0, 3));
