@@ -17,7 +17,7 @@ export default function Login() {
   const [localError, setLocalError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setLocalError('');
   };
