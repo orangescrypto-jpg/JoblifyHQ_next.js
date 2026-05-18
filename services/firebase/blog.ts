@@ -20,7 +20,7 @@ export const createBlog = async (postData, userId) => {
 export const getBlogs = async () => {
   const q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 };
 
 export const getBlogById = async (id) => {
@@ -32,7 +32,7 @@ export const getBlogById = async (id) => {
     updateDoc(docRef, {
       views: (docSnap.data().views || 0) + 1
     }).catch(() => {});
-    return { id: docSnap.id, ...docSnap.data() };
+    return { id: docSnap.id, ...docSnap.data() } as any;
   }
   return null;
 };

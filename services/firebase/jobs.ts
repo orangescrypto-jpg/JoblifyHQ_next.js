@@ -42,7 +42,7 @@ export const getJobs = async (filters: JobFilters = {}, pageLimit = PAGE_SIZE, l
   const q = query(collection(db, 'jobs'), ...constraints);
   const snapshot = await getDocs(q);
 
-  let jobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  let jobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
   const newLastDoc = snapshot.docs[snapshot.docs.length - 1] ?? null;
 
   // JS-only: full-text search
@@ -112,7 +112,7 @@ export const getEmployerJobs = async (userId: string) => {
     orderBy('createdAt', 'desc')
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 };
 
 export const boostJob = async (id: string, userId: string, durationDays = 14) => {

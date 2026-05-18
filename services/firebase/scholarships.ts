@@ -41,7 +41,7 @@ export const getScholarships = async (filters: ScholarshipFilters = {}) => {
   }
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 };
 
 export const getScholarshipById = async (id: string) => {
@@ -54,7 +54,7 @@ export const getScholarshipById = async (id: string) => {
       views: (docSnap.data().views || 0) + 1,
       updatedAt: Timestamp.now()
     }).catch(() => {});
-    return { id: docSnap.id, ...docSnap.data() };
+    return { id: docSnap.id, ...docSnap.data() } as any;
   }
   return null;
 };
@@ -79,7 +79,7 @@ export const getEmployerScholarships = async (userId: string) => {
     where('postedBy', '==', userId)
   );
   const snapshot = await getDocs(q);
-  const scholarships = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const scholarships = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
   // Sort newest first in JavaScript
   return scholarships.sort((a, b) => {
     const aTime = a.createdAt?.seconds || 0;
