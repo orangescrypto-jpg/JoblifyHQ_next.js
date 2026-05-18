@@ -230,23 +230,23 @@ function SalaryModal({ isOpen, onClose, onSubmit, initial, loading }: SalaryModa
 export default function Admin() {
   const { user } = useAuth();
   const [activeTab, setActiveTab]     = useState('job');
-  const [items, setItems] = useState<Record<string, unknown>[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading]         = useState(true);
   const [modalOpen, setModalOpen]     = useState(false);
-  const [editItem, setEditItem] = useState<Record<string, unknown> | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Record<string, unknown> | null>(null);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
   // Applications tab state
-  const [selectedApp, setSelectedApp] = useState<Record<string, unknown> | null>(null);
+  const [selectedApp, setSelectedApp] = useState<any>(null);
   const [appFilterStatus, setAppFilterStatus] = useState('all');
   const [appSearch, setAppSearch]           = useState('');
 
   // Salary tab state
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
-  const [editSalary, setEditSalary] = useState<Record<string, unknown> | null>(null);
+  const [editSalary, setEditSalary] = useState<any>(null);
   const [salarySearch, setSalarySearch]       = useState('');
 
   const showToast = (msg: string, type = 'success') => {
