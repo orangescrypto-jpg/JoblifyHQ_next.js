@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Link, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboard } from '@/context/DashboardContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
