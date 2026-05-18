@@ -47,7 +47,7 @@ export default function ScholarshipDetails() {
   const [scholarship, setScholarship] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
-  const [relatedScholarships, setRelatedScholarships] = useState([]);
+  const [relatedScholarships, setRelatedScholarships] = useState<any[]>([]);
 
   useEffect(() => {
     setLoading(true);
