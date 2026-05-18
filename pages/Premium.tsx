@@ -125,6 +125,7 @@ export default function Premium() {
     },
     customizations: {
       title: 'JoblifyHQ Premium',
+      description: 'Unlock premium features on JoblifyHQ',
       logo: 'https://joblifyhq.com/logo.png',
     },
   });
