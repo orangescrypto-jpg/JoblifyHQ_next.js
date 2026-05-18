@@ -9,7 +9,7 @@ import ShareButtons from '@/components/blog/ShareButtons';
 import { FiCalendar, FiUser, FiArrowLeft } from 'react-icons/fi';
 
 export default function BlogDetails() {
-  const { id } = useParams();
+  const params = useParams(); const id = params?.id as string;
   const [post, setPost] = useState<Record<string, unknown> | null>(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
