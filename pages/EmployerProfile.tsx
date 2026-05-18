@@ -7,7 +7,7 @@ import { getJobs } from '@/services/firebase/jobs';
 import JobCard from '@/components/job/JobCard';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
-function isActivelyHiring(jobs) {
+function isActivelyHiring(jobs: any[]) {
   return jobs.some(job => {
     if (!job.createdAt) return false;
     const posted = job.createdAt?.seconds
@@ -20,7 +20,7 @@ function isActivelyHiring(jobs) {
 export default function EmployerProfile() {
   const { company } = useParams();
   const router = useRouter();
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const companyName = decodeURIComponent(company || '');
