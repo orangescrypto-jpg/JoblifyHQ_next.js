@@ -405,8 +405,8 @@ export default function Admin() {
   const handleAppStatusChange = async (appId: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'applications', appId), { status: newStatus, updatedAt: Timestamp.now() });
-      setItems(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
-      if (selectedApp?.id === appId) setSelectedApp(prev => ({ ...prev, status: newStatus }));
+      setItems((prev: any[]) => prev.map((a: any) => a.id === appId ? { ...a, status: newStatus } : a));
+      if (selectedApp?.id === appId) setSelectedApp((prev: any) => ({ ...prev, status: newStatus }));
       showToast('Status updated');
     } catch {
       showToast('Failed to update status', 'error');
