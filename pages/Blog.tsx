@@ -7,7 +7,7 @@ import EmptyState from '@/components/common/EmptyState';
 import { FiSearch } from 'react-icons/fi';
 
 export default function Blog() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -24,8 +24,8 @@ export default function Blog() {
 
   const filtered = data.filter(p => {
     const matchesSearch =
-      String(p.title ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      String(p.excerpt ?? "").toLowerCase().includes(search.toLowerCase());
+      p.title?.toLowerCase().includes(search.toLowerCase()) ||
+      p.excerpt?.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !category || category === 'All' || p.category === category;
     return matchesSearch && matchesCategory;
   });
