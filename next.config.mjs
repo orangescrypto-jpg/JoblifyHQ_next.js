@@ -21,6 +21,16 @@ const nextConfig = {
       net: false,
       tls: false,
     };
+
+    // Fix Firebase protobuf critical dependency warning
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      {
+        module: /node_modules\/@protobufjs\/inquire/,
+        message: /Critical dependency/,
+      },
+    ];
+
     return config;
   },
 };
