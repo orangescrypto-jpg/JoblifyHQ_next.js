@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
-export const createScholarship = async (data, userId) => {
+export const createScholarship = async (data: any, userId: string) => {
   const docRef = await addDoc(collection(db, 'scholarships'), {
     ...data,
     postedBy: userId,
