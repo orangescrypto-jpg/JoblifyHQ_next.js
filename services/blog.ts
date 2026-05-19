@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
-export const createBlog = async (postData, userId) => {
+export const createBlog = async (postData: any, userId: string) => {
   const docRef = await addDoc(collection(db, 'blog'), {
     ...postData,
     authorId: userId,
@@ -23,7 +23,7 @@ export const getBlogs = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 };
 
-export const getBlogById = async (id) => {
+export const getBlogById = async (id: string) => {
   const docRef = doc(db, 'blog', id);
   const docSnap = await getDoc(docRef);
   
@@ -37,7 +37,7 @@ export const getBlogById = async (id) => {
   return null;
 };
 
-export const updateBlog = async (id, updates, userId) => {
+export const updateBlog = async (id: string, updates: any, userId: string) => {
   const blogRef = doc(db, 'blog', id);
   await updateDoc(blogRef, {
     ...updates,
@@ -46,6 +46,6 @@ export const updateBlog = async (id, updates, userId) => {
   });
 };
 
-export const deleteBlog = async (id) => {
+export const deleteBlog = async (id: string) => {
   await deleteDoc(doc(db, 'blog', id));
 };
