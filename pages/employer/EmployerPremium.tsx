@@ -141,7 +141,7 @@ export default function Premium() {
         description: planId === 'premium' ? 'Growth Plan - ₦16,000' : 'Pro Plan - ₦48,000',
         logo: 'https://joblifyhq.com/logo.png',
       },
-      callback: async (response) => {
+      callback: async (response: { status: string; transaction_id: string }) => {
         if (response.status === 'successful' || response.status === 'completed') {
           try {
             await updateDoc(doc(db, 'users', user.uid), {
