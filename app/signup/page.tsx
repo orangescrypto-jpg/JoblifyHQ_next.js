@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
 import Signup from '@/pages/Signup';
 
 export const metadata: Metadata = {
