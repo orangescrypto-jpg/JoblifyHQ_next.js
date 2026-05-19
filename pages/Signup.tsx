@@ -35,7 +35,7 @@ export default function Signup() {
     return Object.keys(e).length === 0;
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     // Clear error when user types
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
