@@ -24,7 +24,7 @@ interface JobFilters {
   [key: string]: unknown;
 }
 export const getJobs = async (filters: JobFilters = {}, pageLimit = PAGE_SIZE, lastDoc: QueryDocumentSnapshot<DocumentData> | null = null) => {
-  let constraints = [orderBy('createdAt', 'desc')];
+  let constraints: any[] = [orderBy('createdAt', 'desc')];
 
   // Only apply status filter when explicitly requested
   if (filters.status && filters.status !== 'all') {
@@ -78,7 +78,7 @@ export const getJobById = async (id: string) => {
   return { id: docSnap.id, ...docSnap.data() } as any;
 };
 
-export const createJob = async (jobData, userId) => {
+export const createJob = async (jobData: any, userId: string) => {
   const docRef = await addDoc(collection(db, 'jobs'), {
     ...jobData,
     postedBy: userId,
@@ -126,7 +126,7 @@ export const boostJob = async (id: string, userId: string, durationDays = 14) =>
   });
 };
 
-export const createReferral = async (jobId, referrerId, friendEmail) => {
+export const createReferral = async (jobId: string, referrerId: string, friendEmail: string) => {
   const docRef = await addDoc(collection(db, 'referrals'), {
     jobId, referrerId, friendEmail, createdAt: Timestamp.now(), status: 'pending',
   });
@@ -140,7 +140,7 @@ export const getReferralCount = async (userId: string) => {
 };
 
 const TIER_RANK: Record<string, number> = { 'premium-annual': 0, 'premium': 1, 'free': 2, 'undefined': 3 };
-export const sortApplicationsByBoost = (applications) =>
+export const sortApplicationsByBoost = (applications: any[]) =>
   [...applications].sort((a, b) => {
     const tierDiff = (TIER_RANK[a.applicantTier] ?? 3) - (TIER_RANK[b.applicantTier] ?? 3);
     if (tierDiff !== 0) return tierDiff;
