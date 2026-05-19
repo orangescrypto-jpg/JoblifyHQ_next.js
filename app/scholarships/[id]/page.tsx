@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import MainLayout from '@/layouts/MainLayout';
-import JobDetails from '@/pages/JobDetails';
+import ScholarshipDetails from '@/pages/ScholarshipDetails';
 
 const BASE_URL = 'https://joblifyhq.com';
 
@@ -11,22 +11,20 @@ export async function generateMetadata(
   { params }: { params: { id: string } }
 ): Promise<Metadata> {
   try {
-    const snap = await getDoc(doc(db, 'jobs', params.id));
-    if (!snap.exists()) return { title: 'Job Not Found | JoblifyHQ' };
-    const job = snap.data();
-    const company = job.company || job.org || 'Company';
-    const title = `${job.title} at ${company}`;
-    const location = job.location ? ` in ${job.location}` : '';
-    const jobType = job.type ? ` ${job.type} role.` : '';
-    const desc = `Apply for ${job.title} at ${company}${location}.${jobType} Find this and more on JoblifyHQ.`;
+    const snap = await getDoc(doc(db, 'scholarships', params.id)); // ✅ Fixed: was 'jobs'
+    if (!snap.exists()) return { title: 'Scholarship Not Found | JoblifyHQ' };
+    const s = snap.data();
+    const org = s.org || s.company || 'Organization';
+    const title = `${s.title} by ${org}`;
+    const desc = `Apply for ${s.title} by ${org}. Find this and more scholarships on JoblifyHQ.`;
     return {
       title,
       description: desc,
-      alternates: { canonical: `${BASE_URL}/jobs/${params.id}` },
+      alternates: { canonical: `${BASE_URL}/scholarships/${params.id}` },
       openGraph: {
         title: `${title} | JoblifyHQ`,
         description: desc,
-        url: `${BASE_URL}/jobs/${params.id}`,
+        url: `${BASE_URL}/scholarships/${params.id}`,
         siteName: 'JoblifyHQ',
         images: [{ url: '/og-image.png', width: 1200, height: 630, alt: title }],
         type: 'article',
@@ -40,10 +38,10 @@ export async function generateMetadata(
       },
     };
   } catch {
-    return { title: 'Job Details | JoblifyHQ' };
+    return { title: 'Scholarship Details | JoblifyHQ' };
   }
 }
 
-export default function JobDetailsPage() {
-  return <MainLayout><JobDetails /></MainLayout>;
+export default function ScholarshipDetailsPage() {
+  return <MainLayout><ScholarshipDetails /></MainLayout>; // ✅ Fixed: was JobDetails
 }
