@@ -26,9 +26,9 @@ export default function EmployerListings() {
   const [activeTab, setActiveTab] = useState('all');
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editModal, setEditModal] = useState({ open: false, item: null, type: '' });
-  const [promoteModal, setPromoteModal] = useState({ open: false, listing: null });
-  const [deleteModal, setDeleteModal] = useState({ open: false, listing: null });
+  const [editModal, setEditModal] = useState<{ open: boolean; item: any; type: string }>({ open: false, item: null, type: '' });
+  const [promoteModal, setPromoteModal] = useState<{ open: boolean; listing: any }>({ open: false, listing: null });
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; listing: any }>({ open: false, listing: null });
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
