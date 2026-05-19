@@ -30,7 +30,7 @@ export default function Students() {
   const [countryFilter, setCountryFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [lastDoc, setLastDoc] = useState<null | import('firebase/firestore').QueryDocumentSnapshot>(null);
+  const [lastDoc, setLastDoc] = useState<import('firebase/firestore').QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
