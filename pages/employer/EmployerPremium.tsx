@@ -113,7 +113,7 @@ export default function Premium() {
 
   const isPremium = user?.employerTier === 'premium' || user?.employerTier === 'pro';
 
-  const handleUpgrade = (planId) => {
+  const handleUpgrade = (planId: string) => {
     if (!user) { router.push('/login'); return; }
     if (planId === 'free') return;
     if (isPremium && planId === user?.employerTier) return;
