@@ -1,7 +1,7 @@
 import {
   collection, addDoc, getDocs, getDoc, doc,
   updateDoc, deleteDoc, query, where, orderBy,
-  limit, startAfter, Timestamp
+  limit, startAfter, Timestamp, QueryDocumentSnapshot, DocumentData
 } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
@@ -23,7 +23,7 @@ interface JobFilters {
   isRemote?: boolean; search?: string; activeHiringOnly?: boolean;
   [key: string]: unknown;
 }
-export const getJobs = async (filters: JobFilters = {}, pageLimit = PAGE_SIZE, lastDoc = null) => {
+export const getJobs = async (filters: JobFilters = {}, pageLimit = PAGE_SIZE, lastDoc: QueryDocumentSnapshot<DocumentData> | null = null) => {
   let constraints = [orderBy('createdAt', 'desc')];
 
   // Only apply status filter when explicitly requested
