@@ -1,5 +1,6 @@
 'use client';
 import type { FormEvent } from 'react';
+import type { UserRole } from '@/types';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,7 @@ export default function Signup() {
   const { signup, loginWithGoogle } = useAuth();
   const router = useRouter();
   
-  const [role, setRole] = useState('user'); // 'user' or 'employer'
+  const [role, setRole] = useState<UserRole>('user');
   const [form, setForm] = useState<{name:string;email:string;password:string;confirmPassword:string;company:string}>({ 
     name: '', 
     email: '', 
