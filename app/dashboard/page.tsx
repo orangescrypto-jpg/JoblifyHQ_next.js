@@ -1,5 +1,5 @@
 'use client';
-import type { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import MainLayout from '@/layouts/MainLayout';
 import Dashboard from '@/pages/Dashboard';
