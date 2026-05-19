@@ -88,7 +88,7 @@ export default function EmployerPostJob() {
     }
   };
 
-  const set = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  const set = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
   if (success) {
     return (
