@@ -26,7 +26,7 @@ export default function EmployerListings() {
   const [activeTab, setActiveTab] = useState('all');
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editModal, setEditModal] = useState<{ open: boolean; item: any; type: string }>({ open: false, item: null, type: '' });
+  const [editModal, setEditModal] = useState<{ open: boolean; item: any; type: 'job' | 'scholarship' | 'blog' | '' }>({ open: false, item: null, type: '' });
   const [promoteModal, setPromoteModal] = useState<{ open: boolean; listing: any }>({ open: false, listing: null });
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; listing: any }>({ open: false, listing: null });
   const [actionLoading, setActionLoading] = useState(false);
@@ -283,7 +283,7 @@ export default function EmployerListings() {
       <AdminFormModal
         isOpen={editModal.open}
         onClose={() => setEditModal({ open: false, item: null, type: '' })}
-        type={editModal.type}
+        type={editModal.type as 'job' | 'scholarship' | 'blog'}
         initialData={editModal.item}
         onSubmit={handleEditSubmit}
       />
