@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import EmployerLayout from '@/layouts/EmployerLayout';
 import EmployerDashboard from '@/pages/employer/EmployerDashboard';
