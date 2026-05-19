@@ -32,7 +32,7 @@ export default function EmployerListings() {
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = (msg: string, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
@@ -63,11 +63,11 @@ export default function EmployerListings() {
     : listings.filter(l => l.listingType === activeTab);
 
   // Edit
-  const handleEdit = (listing) => {
+  const handleEdit = (listing: any) => {
     setEditModal({ open: true, item: listing, type: listing.listingType });
   };
 
-  const handleEditSubmit = async (formData) => {
+  const handleEditSubmit = async (formData: any) => {
     const { id: _id, type: _type, listingType, ...cleanData } = formData;
     try {
       if (editModal.type === 'job') {
@@ -84,7 +84,7 @@ export default function EmployerListings() {
   };
 
   // Boost
-  const handlePromote = (listing) => setPromoteModal({ open: true, listing });
+  const handlePromote = (listing: any) => setPromoteModal({ open: true, listing });
 
   const confirmPromote = async () => {
     const { listing } = promoteModal;
@@ -106,7 +106,7 @@ export default function EmployerListings() {
   };
 
   // Delete
-  const handleDelete = (listing) => setDeleteModal({ open: true, listing });
+  const handleDelete = (listing: any) => setDeleteModal({ open: true, listing });
 
   const confirmDelete = async () => {
     const { listing } = deleteModal;
