@@ -29,7 +29,7 @@ export default function SalaryPortal() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleCountryChange = (c) => {
+  const handleCountryChange = (c: string) => {
     setCountryFilter(c);
     setCityFilter('');
   };
@@ -46,9 +46,9 @@ export default function SalaryPortal() {
     return searchMatch && countryMatch && cityMatch && expMatch;
   });
 
-  const formatSalary = (min, max, country) => {
+  const formatSalary = (min: number, max: number, country: string) => {
     const currency = (CURRENCY_BY_COUNTRY as Record<string,any>)[country] || { symbol: '₦', name: 'NGN' };
-    const fmt = (n) => {
+    const fmt = (n: number) => {
       if (!n) return null;
       if (n >= 1000000) return `${currency.symbol}${(n / 1000000).toFixed(1)}M`;
       return `${currency.symbol}${(n / 1000).toFixed(0)}k`;
