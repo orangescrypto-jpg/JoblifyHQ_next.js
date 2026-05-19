@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
 import MainLayout from '@/layouts/MainLayout';
 import Premium from '@/pages/Premium';
 
