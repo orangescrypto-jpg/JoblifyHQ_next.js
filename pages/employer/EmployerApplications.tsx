@@ -16,7 +16,7 @@ const STATUS_STYLES: Record<string,string> = {
   Rejected:  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
-const isPremiumApplicant = (app) =>
+const isPremiumApplicant = (app: Record<string, any>) =>
   app.applicantTier === 'premium' || app.applicantTier === 'premium-annual';
 
 export default function EmployerApplications() {
@@ -29,7 +29,7 @@ export default function EmployerApplications() {
   const [jobTitles, setJobTitles] = useState<any[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
-  const showToast = (msg, type = 'success') => {
+  const showToast = (msg: string, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
@@ -83,7 +83,7 @@ export default function EmployerApplications() {
 
   useEffect(() => { fetchApplications(); }, [user?.uid]);
 
-  const handleStatusChange = async (appId, newStatus) => {
+  const handleStatusChange = async (appId: string, newStatus: string) => {
     try {
       await updateDoc(doc(db, 'applications', appId), {
         status: newStatus,
@@ -103,7 +103,7 @@ export default function EmployerApplications() {
     return jobMatch && statusMatch;
   });
 
-  const formatDate = (ts) => {
+  const formatDate = (ts: any) => {
     if (!ts?.toDate) return 'Recently';
     const d = ts.toDate();
     const diff = Date.now() - d.getTime();
