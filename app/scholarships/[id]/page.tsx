@@ -9,10 +9,10 @@ const BASE_URL = 'https://joblifyhq.com';
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
-  const { id } = await params
 ): Promise<Metadata> {
+  const { id } = await params;
   try {
-    const snap = await getDoc(doc(db, 'scholarships', id)); // ✅ Fixed: was 'jobs'
+    const snap = await getDoc(doc(db, 'scholarships', id));
     if (!snap.exists()) return { title: 'Scholarship Not Found | JoblifyHQ' };
     const s = snap.data();
     const org = s.org || s.company || 'Organization';
@@ -44,5 +44,5 @@ export async function generateMetadata(
 }
 
 export default function ScholarshipDetailsPage() {
-  return <MainLayout><ScholarshipDetails /></MainLayout>; // ✅ Fixed: was JobDetails
+  return <MainLayout><ScholarshipDetails /></MainLayout>;
 }

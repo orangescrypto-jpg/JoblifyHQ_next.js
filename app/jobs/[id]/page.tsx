@@ -9,8 +9,8 @@ const BASE_URL = 'https://joblifyhq.com';
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
-  const { id } = await params
 ): Promise<Metadata> {
+  const { id } = await params;
   try {
     const snap = await getDoc(doc(db, 'jobs', id));
     if (!snap.exists()) return { title: 'Job Not Found | JoblifyHQ' };
