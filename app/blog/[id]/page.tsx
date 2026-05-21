@@ -7,10 +7,11 @@ import BlogDetails from '@/pages/BlogDetails';
 const BASE_URL = 'https://joblifyhq.com';
 
 export async function generateMetadata(
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
+  const { id } = await params
 ): Promise<Metadata> {
   try {
-    const snap = await getDoc(doc(db, 'blog', params.id));
+    const snap = await getDoc(doc(db, 'blog', id));
     if (!snap.exists()) return { title: 'Article Not Found | JoblifyHQ' };
     const post = snap.data();
     const title = post.title || 'Career Article';
@@ -22,11 +23,11 @@ export async function generateMetadata(
       title,
       description: desc,
       authors: post.author ? [{ name: post.author }] : undefined,
-      alternates: { canonical: `${BASE_URL}/blog/${params.id}` },
+      alternates: { canonical: `${BASE_URL}/blog/${id}` },
       openGraph: {
         title: `${title} | JoblifyHQ`,
         description: desc,
-        url: `${BASE_URL}/blog/${params.id}`,
+        url: `${BASE_URL}/blog/${id}`,
         siteName: 'JoblifyHQ',
         images: [{ url: image, width: 1200, height: 630, alt: title }],
         type: 'article',

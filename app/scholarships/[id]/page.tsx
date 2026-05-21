@@ -8,10 +8,11 @@ import ScholarshipDetails from '@/pages/ScholarshipDetails';
 const BASE_URL = 'https://joblifyhq.com';
 
 export async function generateMetadata(
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
+  const { id } = await params
 ): Promise<Metadata> {
   try {
-    const snap = await getDoc(doc(db, 'scholarships', params.id)); // ✅ Fixed: was 'jobs'
+    const snap = await getDoc(doc(db, 'scholarships', id)); // ✅ Fixed: was 'jobs'
     if (!snap.exists()) return { title: 'Scholarship Not Found | JoblifyHQ' };
     const s = snap.data();
     const org = s.org || s.company || 'Organization';
@@ -20,11 +21,11 @@ export async function generateMetadata(
     return {
       title,
       description: desc,
-      alternates: { canonical: `${BASE_URL}/scholarships/${params.id}` },
+      alternates: { canonical: `${BASE_URL}/scholarships/${id}` },
       openGraph: {
         title: `${title} | JoblifyHQ`,
         description: desc,
-        url: `${BASE_URL}/scholarships/${params.id}`,
+        url: `${BASE_URL}/scholarships/${id}`,
         siteName: 'JoblifyHQ',
         images: [{ url: '/og-image.png', width: 1200, height: 630, alt: title }],
         type: 'article',
