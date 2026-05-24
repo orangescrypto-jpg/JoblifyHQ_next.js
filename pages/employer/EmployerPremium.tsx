@@ -1,23 +1,24 @@
 'use client';
-import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext'
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '@/firebase/config'
-import { FLUTTERWAVE_PUBLIC_KEY } from '@/config/payments'
+import { db } from '@/firebase/config';
+import { FLUTTERWAVE_PUBLIC_KEY, getPaymentSettings, isBankDetailsComplete } from '@/config/payments';
+import type { PaymentSettings } from '@/config/payments';
 import {
   FiCheck, FiZap, FiStar, FiShield, FiUsers,
-  FiEye, FiTrendingUp, FiAward, FiX,
+  FiEye, FiTrendingUp, FiAward, FiX, FiCopy, FiAlertCircle,
 } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
 declare global { interface Window { FlutterwaveCheckout: (options: Record<string, unknown>) => void; } }
 
+// ─── Static plan meta ─────────────────────────────────────────────────────────
 
-const PLANS = [
+const PLAN_META = [
   {
     id: 'free',
     name: 'Free',
-    price: '$0',
     period: 'forever',
     description: 'Post jobs and find talent across Africa.',
     features: [
@@ -39,11 +40,9 @@ const PLANS = [
   {
     id: 'premium',
     name: 'Growth',
-    price: '$10',
     period: 'per month',
     description: 'For growing teams who want more visibility.',
     badge: 'Most Popular',
-    localHint: '≈ ₦16,000 • KES 1,300 • GHS 155',
     features: [
       { text: '15 active job listings', included: true },
       { text: '2 featured listings per month', included: true },
@@ -63,11 +62,9 @@ const PLANS = [
   {
     id: 'pro',
     name: 'Pro',
-    price: '$30',
     period: 'per month',
     description: 'Best for companies hiring at scale.',
     badge: 'Best Value',
-    localHint: '≈ ₦48,000 • KES 3,900 • GHS 465',
     features: [
       { text: 'Unlimited job listings', included: true },
       { text: 'Unlimited featured listings', included: true },
@@ -88,47 +85,170 @@ const PLANS = [
 
 const PERKS = [
   { icon: FiTrendingUp, title: '3× More Applications', desc: 'Featured listings appear at the top of search and homepage.' },
-  { icon: FiUsers, title: 'Applicant Pipeline', desc: 'Move candidates from Applied → Shortlisted → Hired in one board.' },
-  { icon: FiEye, title: 'Actively Hiring Badge', desc: 'Show job seekers you’re hiring now and get more quality applies.' },
-  { icon: FiShield, title: 'Verified Badge', desc: 'Build trust — verified employers get 40% more applications.' },
-  { icon: FiAward, title: 'Analytics Dashboard', desc: 'Track views, applies, and conversion for every job.' },
-  { icon: FiStar, title: 'Company Branding', desc: 'Custom company page with logo, culture, and all open roles.' },
+  { icon: FiUsers,      title: 'Applicant Pipeline',   desc: 'Move candidates from Applied → Shortlisted → Hired in one board.' },
+  { icon: FiEye,        title: 'Actively Hiring Badge', desc: "Show job seekers you're hiring now and get more quality applies." },
+  { icon: FiShield,     title: 'Verified Badge',        desc: 'Verified employers get 40% more applications.' },
+  { icon: FiAward,      title: 'Analytics Dashboard',   desc: 'Track views, applies, and conversion for every job.' },
+  { icon: FiStar,       title: 'Company Branding',      desc: 'Custom company page with logo, culture, and all open roles.' },
 ];
 
-const FAQS = [
-  { q: 'How do I pay?', a: 'Secure payment via Flutterwave — cards, bank transfer, USSD, mobile money. Charged in NGN, auto-converts from USD.' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime, access remains until end of billing period.' },
-  { q: 'What’s the difference between Growth and Pro?', a: 'Growth gives you 15 jobs and 2 features/month. Pro is unlimited everything plus candidate search and API.' },
-  { q: 'Is my payment safe?', a: 'Yes. Flutterwave is PCI-compliant. We never store card details.' },
-];
+// ─── Manual transfer modal ────────────────────────────────────────────────────
 
-export default function Premium() {
+interface ManualPayModalProps {
+  planId: string;
+  amountNGN: number;
+  settings: PaymentSettings;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}
+
+function ManualPayModal({ planId, amountNGN, settings, onConfirm, onClose }: ManualPayModalProps) {
+  const [copied, setCopied]     = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [done, setDone]         = useState(false);
+
+  const copy = (val: string, key: string) => {
+    navigator.clipboard.writeText(val).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
+
+  const handleIPaid = async () => {
+    setConfirming(true);
+    await onConfirm();
+    setDone(true);
+    setConfirming(false);
+  };
+
+  const planLabel = planId === 'pro' ? 'Pro Plan' : 'Growth Plan';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="font-bold text-gray-900 dark:text-white text-base">Bank Transfer — {planLabel}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <FiX size={20} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-4 text-center">
+            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium uppercase tracking-wide mb-1">Amount to Transfer</p>
+            <p className="text-3xl font-bold text-primary-700 dark:text-primary-300">₦{amountNGN.toLocaleString()}</p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { label: 'Bank Name',      value: settings.bankName,      key: 'bank' },
+              { label: 'Account Name',   value: settings.accountName,   key: 'name' },
+              { label: 'Account Number', value: settings.accountNumber, key: 'acct' },
+            ].map(row => (
+              <div key={row.key} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{row.label}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm mt-0.5">{row.value}</p>
+                </div>
+                <button onClick={() => copy(row.value, row.key)} className="p-2 text-gray-400 hover:text-primary-600 transition" title="Copy">
+                  {copied === row.key ? <FiCheck size={16} className="text-green-500" /> : <FiCopy size={16} />}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {settings.bankNote && (
+            <div className="flex gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+              <FiAlertCircle className="flex-shrink-0 mt-0.5" size={15} />
+              <p className="leading-relaxed">{settings.bankNote}</p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            Transfer the exact amount above, then tap <strong className="text-gray-700 dark:text-gray-300">"I've Paid"</strong>.
+            Your account will be activated within <strong className="text-gray-700 dark:text-gray-300">24 hours</strong> after we confirm receipt.
+          </p>
+
+          {done ? (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm text-center font-medium">
+              ✅ Noted! We'll activate your account once payment is confirmed.
+            </div>
+          ) : (
+            <button
+              onClick={handleIPaid}
+              disabled={confirming}
+              className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {confirming
+                ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving…</>
+                : "I've Paid — Notify Admin"
+              }
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function EmployerPremium() {
   const { user, updateUserProfile } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [loadingPlan, setLoadingPlan] = useState('');
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  const [loading, setLoading]         = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState('');
+  const [success, setSuccess]         = useState('');
+  const [error, setError]             = useState('');
+  const [openFaq, setOpenFaq]         = useState<number | null>(null);
+  const [settings, setSettings]       = useState<PaymentSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [manualPlan, setManualPlan]   = useState<string | null>(null);
+
+  useEffect(() => {
+    getPaymentSettings().then(s => { setSettings(s); setSettingsLoading(false); });
+  }, []);
+
+  const isNigeria = () => Intl.DateTimeFormat().resolvedOptions().timeZone === 'Africa/Lagos';
+  const bankReady = settings ? isBankDetailsComplete(settings) : false;
   const isPremium = user?.employerTier === 'premium' || user?.employerTier === 'pro';
 
-  const handleUpgrade = (planId: string) => {
+  const growthNGN = settings?.employerGrowthNGN ?? 16000;
+  const proNGN    = settings?.employerProNGN    ?? 48000;
+  const growthUSD = settings?.employerGrowthUSD ?? 10;
+  const proUSD    = settings?.employerProUSD    ?? 30;
+
+  const planPrice = (id: string) => {
+    if (id === 'free')    return '$0';
+    if (id === 'premium') return isNigeria() ? `₦${growthNGN.toLocaleString()}` : `$${growthUSD}`;
+    if (id === 'pro')     return isNigeria() ? `₦${proNGN.toLocaleString()}`    : `$${proUSD}`;
+    return '';
+  };
+
+  const planLocalHint = (id: string) => {
+    if (id === 'free') return undefined;
+    if (id === 'premium') return isNigeria()
+      ? `≈ $${growthUSD} • KES ${Math.round(growthUSD * 130)}`
+      : `≈ ₦${growthNGN.toLocaleString()} • KES ${Math.round(growthUSD * 130)}`;
+    if (id === 'pro') return isNigeria()
+      ? `≈ $${proUSD} • KES ${Math.round(proUSD * 130)}`
+      : `≈ ₦${proNGN.toLocaleString()} • KES ${Math.round(proUSD * 130)}`;
+  };
+
+  const handleFlutterwaveUpgrade = (planId: string) => {
     if (!user) { router.push('/login'); return; }
-    if (planId === 'free') return;
-    if (isPremium && planId === user?.employerTier) return;
 
     setLoading(true);
     setLoadingPlan(planId);
     setError('');
     setSuccess('');
 
-    const amount = planId === 'premium' ? 16000 : 48000;
-    const days = 30;
+    const amount = planId === 'premium' ? growthNGN : proNGN;
 
     window.FlutterwaveCheckout({
       public_key: FLUTTERWAVE_PUBLIC_KEY,
-      tx_ref: `emp_${user.uid}_${Date.now()}`,
+      tx_ref: `emp_${user.uid}_${planId}_${Date.now()}`,
       amount: Number(amount),
       currency: 'NGN',
       payment_options: 'card,mobilemoney,ussd,banktransfer',
@@ -138,7 +258,7 @@ export default function Premium() {
       },
       customizations: {
         title: 'JoblifyHQ Employer',
-        description: planId === 'premium' ? 'Growth Plan - ₦16,000' : 'Pro Plan - ₦48,000',
+        description: planId === 'premium' ? `Growth Plan - ₦${growthNGN.toLocaleString()}` : `Pro Plan - ₦${proNGN.toLocaleString()}`,
         logo: 'https://joblifyhq.com/logo.png',
       },
       callback: async (response: { status: string; transaction_id: string }) => {
@@ -147,20 +267,14 @@ export default function Premium() {
             await updateDoc(doc(db, 'users', user.uid), {
               employerTier: planId,
               employerBilling: 'monthly',
-              subscriptionExpiresAt: Timestamp.fromDate(
-                new Date(Date.now() + days * 24 * 60 * 60 * 1000)
-              ),
+              subscriptionExpiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
               flwTransactionId: response.transaction_id,
               updatedAt: serverTimestamp(),
             });
             if (typeof updateUserProfile === 'function') {
               await updateUserProfile({ employerTier: planId });
             }
-            setSuccess(
-              planId === 'pro'
-                ? "You're now on Pro! Unlimited hiring unlocked. 🎉"
-                : "You're now on Growth! Your jobs will get featured. 🚀"
-            );
+            setSuccess(planId === 'pro' ? "You're now on Pro! Unlimited hiring unlocked. 🎉" : "You're now on Growth! Your jobs will get featured. 🚀");
             setTimeout(() => router.push('/employer'), 2000);
           } catch (err) {
             console.error(err);
@@ -172,12 +286,57 @@ export default function Premium() {
         setLoading(false);
         setLoadingPlan('');
       },
-      onclose: () => {
-        setLoading(false);
-        setLoadingPlan('');
-      },
+      onclose: () => { setLoading(false); setLoadingPlan(''); },
     });
   };
+
+  const handleManualConfirm = async (planId: string) => {
+    if (!user) return;
+    const ref = `manual_emp_${user.uid}_${planId}_${Date.now()}`;
+    await updateDoc(doc(db, 'users', user.uid), {
+      employerTier: planId,
+      employerPaymentStatus: 'pending_verification',
+      employerBilling: 'monthly',
+      subscriptionExpiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+      manualPayRef: ref,
+      updatedAt: serverTimestamp(),
+    });
+    if (typeof updateUserProfile === 'function') {
+      await updateUserProfile({ employerTier: planId });
+    }
+  };
+
+  const handleUpgradeClick = (planId: string) => {
+    if (!user) { router.push('/login'); return; }
+    if (planId === 'free') return;
+    if (isPremium && planId === user?.employerTier) return;
+
+    if (isNigeria() && bankReady) {
+      setManualPlan(planId);
+    } else {
+      handleFlutterwaveUpgrade(planId);
+    }
+  };
+
+  const FAQS = [
+    {
+      q: 'How do I pay?',
+      a: isNigeria()
+        ? 'Nigerian employers pay via bank transfer. Activation within 24 hours of confirmation. Outside Nigeria, payment goes through Flutterwave — cards, mobile money, bank transfer supported.'
+        : 'Secure payment via Flutterwave — cards, bank transfer, USSD, mobile money.',
+    },
+    { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime, access remains until end of billing period.' },
+    { q: "What's the difference between Growth and Pro?", a: 'Growth gives you 15 jobs and 2 features/month. Pro is unlimited everything plus candidate search and API.' },
+    { q: 'Is my payment safe?', a: 'For bank transfer, you pay directly to our verified account. For card, Flutterwave is PCI-compliant — we never store card details.' },
+  ];
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
@@ -190,16 +349,17 @@ export default function Premium() {
           <p className="text-primary-100 text-lg max-w-xl mx-auto leading-relaxed">
             Post jobs, get featured, and manage applicants with tools built for African employers.
           </p>
+          {isNigeria() && (
+            <span className="inline-block mt-4 text-xs bg-white/20 rounded-full px-3 py-1">
+              🇳🇬 Nigerian employers — pay by bank transfer
+            </span>
+          )}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-12">
-        {success && (
-          <div className="mb-8 p-4 bg-green-50 border-green-200 rounded-xl text-green-700 text-sm text-center">{success}</div>
-        )}
-        {error && (
-          <div className="mb-8 p-4 bg-red-50 border-red-200 rounded-xl text-red-700 text-sm text-center">{error}</div>
-        )}
+        {success && <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm text-center">{success}</div>}
+        {error   && <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center">{error}</div>}
 
         {isPremium && (
           <div className="mb-10 p-5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl flex items-center gap-4">
@@ -212,78 +372,80 @@ export default function Premium() {
                 Active plan: {user?.employerTier === 'pro' ? 'Pro' : 'Growth'}
               </p>
             </div>
-            <button
-              onClick={() => router.push('/employer')}
-              className="ml-auto text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
-            >
+            <button onClick={() => router.push('/employer')} className="ml-auto text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
               Go to Dashboard →
             </button>
           </div>
         )}
 
+        {/* Plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative bg-white dark:bg-gray-800 rounded-2xl flex flex-col ${plan.accent ? 'border-2 border-primary-500 shadow-xl' : 'border border-gray-200 dark:border-gray-700'}`}
-            >
-              {plan.badge && (
-                <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs px-4 py-1 rounded-full font-semibold whitespace-nowrap ${plan.accent ? 'bg-primary-600 text-white' : 'bg-purple-600 text-white'}`}>
-                  {plan.badge}
-                </span>
-              )}
-              <div className="p-6 flex flex-col flex-1">
-                <div className="mb-5">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">{plan.name}</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{plan.description}</p>
-                  <div className="flex items-baseline gap-1 mt-3">
-                    <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan.price}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">/{plan.period}</span>
+          {PLAN_META.map((plan) => {
+            const isActivePlan = isPremium && plan.id === user?.employerTier;
+            const isDisabled   = plan.disabled || loading || isActivePlan;
+
+            const btnClass = `w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 ${
+              plan.disabled || isActivePlan
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-default'
+                : plan.accent
+                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
+                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+            }`;
+
+            return (
+              <div
+                key={plan.id}
+                className={`relative bg-white dark:bg-gray-800 rounded-2xl flex flex-col ${plan.accent ? 'border-2 border-primary-500 shadow-xl' : 'border border-gray-200 dark:border-gray-700'}`}
+              >
+                {plan.badge && (
+                  <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs px-4 py-1 rounded-full font-semibold whitespace-nowrap ${plan.accent ? 'bg-primary-600 text-white' : 'bg-purple-600 text-white'}`}>
+                    {plan.badge}
+                  </span>
+                )}
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="mb-5">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">{plan.name}</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{plan.description}</p>
+                    <div className="flex items-baseline gap-1 mt-3">
+                      <span className="text-4xl font-bold text-gray-900 dark:text-white">{planPrice(plan.id)}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">/{plan.period}</span>
+                    </div>
+                    {planLocalHint(plan.id) && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{planLocalHint(plan.id)}</p>
+                    )}
                   </div>
-                  {plan.localHint && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{plan.localHint}</p>
-                  )}
+
+                  <ul className="space-y-2.5 mb-6 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f.text} className={`flex items-start gap-2.5 text-sm ${f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
+                        {f.included
+                          ? <FiCheck className="text-green-500 flex-shrink-0 mt-0.5" size={15} />
+                          : <FiX className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" size={15} />
+                        }
+                        {f.text}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={() => handleUpgradeClick(plan.id)}
+                    disabled={isDisabled}
+                    className={btnClass}
+                  >
+                    {loadingPlan === plan.id ? (
+                      <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Processing…</>
+                    ) : isActivePlan ? '✓ Active Plan'
+                      : isNigeria() && bankReady && !plan.disabled ? `🏦 ${plan.cta}`
+                      : plan.cta
+                    }
+                  </button>
                 </div>
-
-                <ul className="space-y-2.5 mb-6 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f.text} className={`flex items-start gap-2.5 text-sm ${f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}`}>
-                      {f.included
-                        ? <FiCheck className="text-green-500 flex-shrink-0 mt-0.5" size={15} />
-                        : <FiX className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" size={15} />
-                      }
-                      {f.text}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleUpgrade(plan.id)}
-                  disabled={plan.disabled || loading || (isPremium && plan.id === user?.employerTier)}
-                  className={`w-full py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 ${
-                    plan.disabled || (isPremium && plan.id === user?.employerTier)
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-default'
-                      : plan.accent
-                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                  }`}
-                >
-                  {loadingPlan === plan.id ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      Processing…
-                    </>
-                  ) : isPremium && plan.id === user?.employerTier ? (
-                    '✓ Active Plan'
-                  ) : (
-                    plan.cta
-                  )}
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
+        {/* Perks */}
         <div className="mb-20">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">Everything employers get</h2>
           <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-10">Tools built to fill roles faster across Africa</p>
@@ -300,6 +462,7 @@ export default function Premium() {
           </div>
         </div>
 
+        {/* FAQs */}
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">Frequently Asked Questions</h2>
           <div className="space-y-3">
@@ -322,6 +485,17 @@ export default function Premium() {
           </div>
         </div>
       </div>
+
+      {/* Manual pay modal */}
+      {manualPlan && settings && (
+        <ManualPayModal
+          planId={manualPlan}
+          amountNGN={manualPlan === 'premium' ? growthNGN : proNGN}
+          settings={settings}
+          onConfirm={async () => { await handleManualConfirm(manualPlan); }}
+          onClose={() => setManualPlan(null)}
+        />
+      )}
     </div>
   );
 }
