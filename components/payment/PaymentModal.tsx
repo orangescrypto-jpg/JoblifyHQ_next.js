@@ -310,7 +310,7 @@ function FlutterwaveFlow({
         setProcessing(false);
       },
     });
-  }, [handleFlutterPayment, payment, plan, settings, user, onSuccess, onError, onClose]); // eslint-disable-line
+  }, [handleFlutterPayment, plan, settings, user, onSuccess, onError, onClose]); // eslint-disable-line
 
   return (
     <div className="space-y-4">
