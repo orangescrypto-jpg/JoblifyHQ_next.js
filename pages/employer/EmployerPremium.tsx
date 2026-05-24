@@ -21,10 +21,10 @@ import type { AppUser } from '@/types';
 // ── Perks ─────────────────────────────────────────────────────────────────────
 
 const PERKS = [
-  { icon: FiTrendingUp, title: '3× More Applications',  desc: 'Featured listings appear at the top of search and the homepage.' },
-  { icon: FiUsers,      title: 'Applicant Pipeline',     desc: 'Move candidates from Applied → Shortlisted → Hired in one board.' },
-  { icon: FiEye,        title: 'Actively Hiring Badge',  desc: 'Show job seekers you're hiring now and get more quality applicants.' },
-  { icon: FiShield,     title: 'Verified Badge',         desc: 'Build trust — verified employers get 40% more applications.' },
+  { icon: FiTrendingUp, title: '3\u00d7 More Applications',  desc: 'Featured listings appear at the top of search and the homepage.' },
+  { icon: FiUsers,      title: 'Applicant Pipeline',     desc: 'Move candidates from Applied \u2192 Shortlisted \u2192 Hired in one board.' },
+  { icon: FiEye,        title: 'Actively Hiring Badge',  desc: "Show job seekers you're hiring now and get more quality applicants." },
+  { icon: FiShield,     title: 'Verified Badge',         desc: 'Build trust \u2014 verified employers get 40% more applications.' },
   { icon: FiAward,      title: 'Analytics Dashboard',    desc: 'Track views, applications, and conversion for every job listing.' },
   { icon: FiStar,       title: 'Company Branding',       desc: 'Custom company page with logo, culture photos, and all open roles.' },
 ];
@@ -33,24 +33,24 @@ const PERKS = [
 
 const FAQS = [
   {
-    q: 'How do I pay from Nigeria?',
-    a: 'Nigerian employers can pay via direct bank transfer. Once you transfer and click "I've Paid", our team confirms receipt and activates your plan — usually within a few hours on business days.',
+    q: "How do I pay from Nigeria?",
+    a: "Nigerian employers can pay via direct bank transfer. Once you transfer and click \"I've Paid\", our team confirms receipt and activates your plan — usually within a few hours on business days.",
   },
   {
-    q: 'How do I pay from outside Nigeria?',
-    a: 'Employers outside Nigeria can pay instantly via Flutterwave — cards, USSD, and mobile money are all supported. Your plan activates immediately.',
+    q: "How do I pay from outside Nigeria?",
+    a: "Employers outside Nigeria can pay instantly via Flutterwave — cards, USSD, and mobile money are all supported. Your plan activates immediately.",
   },
   {
-    q: 'Can I cancel anytime?',
-    a: 'Yes. Cancel before your next billing date and access continues until the end of the period. No penalties or hidden fees.',
+    q: "Can I cancel anytime?",
+    a: "Yes. Cancel before your next billing date and access continues until the end of the period. No penalties or hidden fees.",
   },
   {
-    q: 'What's the difference between Growth and Scale?',
-    a: 'Growth gives you 15 job listings and 2 featured slots per month. Scale is unlimited listings, unlimited featuring, candidate search access, and API access.',
+    q: "What's the difference between Growth and Scale?",
+    a: "Growth gives you 15 job listings and 2 featured slots per month. Scale is unlimited listings, unlimited featuring, candidate search access, and API access.",
   },
   {
-    q: 'Is my payment secure?',
-    a: 'Yes. For Flutterwave payments we never store card details — everything is PCI-compliant. Bank transfers are manual so no card data is involved at all.',
+    q: "Is my payment secure?",
+    a: "Yes. For Flutterwave payments we never store card details — everything is PCI-compliant. Bank transfers are manual so no card data is involved at all.",
   },
 ];
 
