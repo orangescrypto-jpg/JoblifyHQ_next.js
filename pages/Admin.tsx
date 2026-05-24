@@ -5,14 +5,11 @@ import { useState, useEffect } from 'react';
 import {
   FiPlus, FiBriefcase, FiAward, FiFileText, FiEdit2, FiTrash2,
   FiEye, FiUsers, FiTrendingUp, FiMail, FiPhone, FiX, FiRefreshCw,
-  FiDollarSign, FiMapPin, FiSettings, FiSave, FiCreditCard,
+  FiDollarSign, FiMapPin, FiSettings, FiCreditCard,
 } from 'react-icons/fi';
-import {
-  getPaymentSettings,
-  savePaymentSettings,
-} from '@/services/firebase/paymentSettings';
-import type { PaymentSettings } from '@/services/firebase/paymentSettings';
+import Link from 'next/link';
 import AdminFormModal from '@/components/admin/AdminFormModal';
+import AdminPendingPayments from '@/components/admin/AdminPendingPayments';
 import { getJobs, createJob, updateJob, deleteJob } from '@/services/firebase/jobs';
 import { getScholarships, createScholarship, updateScholarship, deleteScholarship } from '@/services/firebase/scholarships';
 import { getDocs, collection, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
@@ -21,14 +18,13 @@ import { useAuth } from '@/context/AuthContext';
 import { AFRICAN_COUNTRIES, CITIES_BY_COUNTRY, EXPERIENCE_LEVELS, COUNTRY_FLAGS } from '@/constants';
 
 const TABS = [
-  { key: 'job',         label: 'Jobs',         icon: FiBriefcase  },
-  { key: 'scholarship', label: 'Scholarships',  icon: FiAward      },
-  { key: 'blog',        label: 'Blog Posts',    icon: FiFileText   },
-  { key: 'applications',label: 'Applications',  icon: FiUsers      },
-  { key: 'salaries',    label: 'Salary Data',   icon: FiDollarSign },
-  { key: 'payments',    label: 'Payment Settings', icon: FiSettings   },
+  { key: 'job',          label: 'Jobs',         icon: FiBriefcase   },
+  { key: 'scholarship',  label: 'Scholarships',  icon: FiAward       },
+  { key: 'blog',         label: 'Blog Posts',    icon: FiFileText    },
+  { key: 'applications', label: 'Applications',  icon: FiUsers       },
+  { key: 'salaries',     label: 'Salary Data',   icon: FiDollarSign  },
+  { key: 'payments',     label: 'Payments',      icon: FiCreditCard  },
 ];
-
 
 const APP_STATUS_STYLES = {
   pending:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -255,45 +251,15 @@ export default function Admin() {
   const [editSalary, setEditSalary] = useState<any>(null);
   const [salarySearch, setSalarySearch]       = useState('');
 
-  // Payment settings state
-  const [paySettings, setPaySettings]         = useState<PaymentSettings | null>(null);
-  const [paySettingsLoading, setPaySettingsLoading] = useState(false);
-  const [paySettingsSaving, setPaySettingsSaving]   = useState(false);
-  const [paySettingsDraft, setPaySettingsDraft]     = useState<PaymentSettings | null>(null);
-
-  const loadPaymentSettings = async () => {
-    setPaySettingsLoading(true);
-    const s = await getPaymentSettings();
-    setPaySettings(s);
-    setPaySettingsDraft(s);
-    setPaySettingsLoading(false);
-  };
-
-  const handlePaySettingsSave = async () => {
-    if (!paySettingsDraft) return;
-    setPaySettingsSaving(true);
-    try {
-      await savePaymentSettings(paySettingsDraft);
-      setPaySettings(paySettingsDraft);
-      showToast("Payment settings saved!");
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to save settings.", "error");
-    } finally {
-      setPaySettingsSaving(false);
-    }
-  };
-
-  const setPay = (key: keyof PaymentSettings, value: string | number) => {
-    setPaySettingsDraft(prev => prev ? { ...prev, [key]: value } : prev);
-  };
-
   const showToast = (msg: string, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
   };
 
   const fetchItems = async () => {
+    // Payments tab renders its own component — no fetch needed here
+    if (activeTab === 'payments') { setLoading(false); return; }
+
     setLoading(true);
     type FItem = Record<string, unknown> & { id: string };
     const ts = (x: unknown) => ((x as { seconds?: number })?.seconds || 0);
@@ -332,7 +298,7 @@ export default function Admin() {
     }
   };
 
-  useEffect(() => { if (activeTab === 'payments') { loadPaymentSettings(); } else { fetchItems(); } }, [activeTab]);
+  useEffect(() => { fetchItems(); }, [activeTab]);
 
   const handleCreate    = () => { setEditItem(null); setModalOpen(true); };
   const handleEdit      = (item: Record<string, unknown>) => { setEditItem(item); setModalOpen(true); };
@@ -375,18 +341,15 @@ export default function Admin() {
     try {
       const { id: _id, type: _type, ...cleanData } = formData;
       if (activeTab === 'job') {
-        // Always ensure status is set so jobs appear on the homepage
         const jobData = { ...cleanData, status: cleanData.status || 'active' };
         if (isEdit) await updateJob(editItem.id as string, jobData);
         else        await createJob(jobData, user?.uid ?? '');
       } else if (activeTab === 'scholarship') {
-        // Always ensure status is set so scholarships appear on the homepage
         const schData = { ...cleanData, status: cleanData.status || 'active' };
         if (isEdit) await updateScholarship(editItem.id as string, schData, user?.uid ?? '');
         else        await createScholarship(schData, user?.uid ?? '');
       } else if (activeTab === 'blog') {
         if (isEdit) {
-          // Always ensure published is set so blog posts appear on the homepage
           await updateDoc(doc(db, 'blog', editItem.id as string), { ...cleanData, published: cleanData.published ?? true, updatedAt: Timestamp.now() });
         } else {
           await addDoc(collection(db, 'blog'), { ...cleanData, published: true, createdAt: Timestamp.now(), updatedAt: Timestamp.now(), views: 0 });
@@ -408,7 +371,6 @@ export default function Admin() {
     setActionLoading(true);
     try {
       if (editSalary) {
-        // Always ensure status is set so salary entries appear on the homepage
         await updateDoc(doc(db, 'salary_data', editSalary.id as string), {
           ...formData,
           status: formData.status || 'active',
@@ -425,10 +387,8 @@ export default function Admin() {
         });
         showToast('Salary record added!');
       }
-      // Close modal first, then refresh so fetchItems sees correct activeTab
       setSalaryModalOpen(false);
       setEditSalary(null);
-      // Fetch salary data directly without relying on activeTab closure
       const snap = await getDocs(collection(db, 'salary_data'));
       const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       (rows as any[]).sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -516,26 +476,36 @@ export default function Admin() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
 
-        {activeTab !== 'applications' && activeTab !== 'salaries' && activeTab !== 'payments' && (
-          <button onClick={handleCreate} className="flex items-center gap-2 btn-primary">
-            <FiPlus /> Add {TABS.find(t => t.key === activeTab)?.label.slice(0, -1)}
-          </button>
-        )}
-
-        {activeTab === 'salaries' && (
-          <button
-            onClick={() => { setEditSalary(null); setSalaryModalOpen(true); }}
-            className="flex items-center gap-2 btn-primary"
+        <div className="flex items-center gap-3">
+          {/* ── Payment Settings shortcut ── */}
+          <Link
+            href="/admin/settings"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary-600 dark:hover:text-primary-400 transition"
           >
-            <FiPlus /> Add Salary Record
-          </button>
-        )}
+            <FiSettings size={15} /> Payment Settings
+          </Link>
 
-        {activeTab === 'applications' && (
-          <button onClick={fetchItems} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 transition">
-            <FiRefreshCw size={14} /> Refresh
-          </button>
-        )}
+          {activeTab !== 'applications' && activeTab !== 'salaries' && activeTab !== 'payments' && (
+            <button onClick={handleCreate} className="flex items-center gap-2 btn-primary">
+              <FiPlus /> Add {TABS.find(t => t.key === activeTab)?.label.slice(0, -1)}
+            </button>
+          )}
+
+          {activeTab === 'salaries' && (
+            <button
+              onClick={() => { setEditSalary(null); setSalaryModalOpen(true); }}
+              className="flex items-center gap-2 btn-primary"
+            >
+              <FiPlus /> Add Salary Record
+            </button>
+          )}
+
+          {activeTab === 'applications' && (
+            <button onClick={fetchItems} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 transition">
+              <FiRefreshCw size={14} /> Refresh
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Row — jobs & scholarships */}
@@ -612,6 +582,30 @@ export default function Admin() {
           );
         })}
       </div>
+
+      {/* ══════════════════════════════════════════════════════
+          PAYMENTS TAB  ← NEW
+      ══════════════════════════════════════════════════════ */}
+      {activeTab === 'payments' && (
+        <div className="space-y-4">
+          {/* Info bar with settings link */}
+          <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm text-blue-700 dark:text-blue-300">
+            <span>
+              🏦 Manual transfers need your confirmation before the user's plan activates.
+              Flutterwave payments are confirmed automatically.
+            </span>
+            <Link
+              href="/admin/settings"
+              className="ml-4 flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100 transition"
+            >
+              <FiSettings size={13} /> Edit Pricing & Bank Details
+            </Link>
+          </div>
+
+          {/* The pending payments panel */}
+          <AdminPendingPayments />
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════
           SALARY TAB
@@ -711,7 +705,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* Public portal link hint */}
           {items.length > 0 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 text-center pt-2">
               💡 These records are live on the public{' '}
@@ -995,149 +988,6 @@ export default function Admin() {
         </>
       )}
 
-
-      {/* ══════════════════════════════════════════════════════
-          PAYMENT SETTINGS TAB
-      ══════════════════════════════════════════════════════ */}
-      {activeTab === 'payments' && (
-        <div className="space-y-6 max-w-2xl">
-          {paySettingsLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : paySettingsDraft && (
-            <>
-              {/* ── Seeker pricing ─────────────────────────────── */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
-                  <FiCreditCard size={16} className="text-primary-600" />
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Job Seeker Plans</h3>
-                </div>
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { label: 'Monthly — NGN (₦)',  key: 'seekerMonthlyNGN' as const },
-                    { label: 'Annual  — NGN (₦)',  key: 'seekerAnnualNGN'  as const },
-                    { label: 'Monthly — USD ($)',  key: 'seekerMonthlyUSD' as const },
-                    { label: 'Annual  — USD ($)',  key: 'seekerAnnualUSD'  as const },
-                  ].map(({ label, key }) => (
-                    <div key={key}>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={paySettingsDraft[key] ?? ''}
-                        onChange={e => setPay(key, Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Employer pricing ───────────────────────────── */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
-                  <FiTrendingUp size={16} className="text-primary-600" />
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Employer Plans</h3>
-                </div>
-                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { label: 'Growth Plan — NGN (₦)', key: 'employerGrowthNGN' as const },
-                    { label: 'Pro Plan   — NGN (₦)',  key: 'employerProNGN'    as const },
-                    { label: 'Growth Plan — USD ($)', key: 'employerGrowthUSD' as const },
-                    { label: 'Pro Plan   — USD ($)',  key: 'employerProUSD'    as const },
-                  ].map(({ label, key }) => (
-                    <div key={key}>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={paySettingsDraft[key] ?? ''}
-                        onChange={e => setPay(key, Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Bank details ───────────────────────────────── */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30">
-                  <FiDollarSign size={16} className="text-primary-600" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Nigerian Bank Details</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shown to Nigerian users on the manual-transfer payment screen</p>
-                  </div>
-                </div>
-                <div className="p-5 space-y-4">
-                  {[
-                    { label: 'Bank Name',      key: 'bankName'      as const, placeholder: 'e.g. Access Bank' },
-                    { label: 'Account Name',   key: 'accountName'   as const, placeholder: 'e.g. JoblifyHQ Technologies Ltd' },
-                    { label: 'Account Number', key: 'accountNumber' as const, placeholder: 'e.g. 0123456789' },
-                  ].map(({ label, key, placeholder }) => (
-                    <div key={key}>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
-                      <input
-                        type="text"
-                        value={paySettingsDraft[key] ?? ''}
-                        onChange={e => setPay(key, e.target.value)}
-                        placeholder={placeholder}
-                        className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      Extra Instructions / Note <span className="font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={paySettingsDraft.bankNote ?? ''}
-                      onChange={e => setPay('bankNote', e.target.value)}
-                      placeholder="e.g. Use your name as transfer narration and send screenshot to support@joblifyhq.com"
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                    />
-                  </div>
-
-                  {/* Preview of what users will see */}
-                  {(paySettingsDraft.bankName || paySettingsDraft.accountName || paySettingsDraft.accountNumber) && (
-                    <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-900/50 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Preview — what users will see</p>
-                      <div className="space-y-1 text-sm">
-                        {paySettingsDraft.bankName      && <p><span className="text-gray-400 w-32 inline-block">Bank:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{paySettingsDraft.bankName}</span></p>}
-                        {paySettingsDraft.accountName   && <p><span className="text-gray-400 w-32 inline-block">Account Name:</span> <span className="font-medium text-gray-800 dark:text-gray-200">{paySettingsDraft.accountName}</span></p>}
-                        {paySettingsDraft.accountNumber && <p><span className="text-gray-400 w-32 inline-block">Account No:</span> <span className="font-semibold text-gray-900 dark:text-white tracking-wider">{paySettingsDraft.accountNumber}</span></p>}
-                        {paySettingsDraft.bankNote      && <p className="text-amber-600 dark:text-amber-400 mt-1 text-xs italic">{paySettingsDraft.bankNote}</p>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Save button ───────────────────────────────── */}
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Changes take effect immediately for all users.
-                </p>
-                <button
-                  onClick={handlePaySettingsSave}
-                  disabled={paySettingsSaving}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition disabled:opacity-60"
-                >
-                  {paySettingsSaving
-                    ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving…</>
-                    : <><FiSave size={14} /> Save Settings</>
-                  }
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Create/Edit Modal (jobs, scholarships, blog) */}
       {activeTab !== 'applications' && activeTab !== 'salaries' && activeTab !== 'payments' && (
         <AdminFormModal
@@ -1164,7 +1014,7 @@ export default function Admin() {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete this item?</h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-              "<span className="font-medium text-gray-700 dark:text-gray-300">{deleteTarget?.title || deleteTarget?.role}</span>" will be permanently deleted.
+              &quot;<span className="font-medium text-gray-700 dark:text-gray-300">{deleteTarget?.title || deleteTarget?.role}</span>&quot; will be permanently deleted.
             </p>
             <div className="flex gap-3 justify-end">
               <button onClick={() => { setConfirmDelete(false); setDeleteTarget(null); }}
