@@ -9,6 +9,9 @@ export const FLUTTERWAVE_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC
 import type { AdminPaymentSettings } from '@/src/services/payment';
 import { PaymentService } from '@/src/services/payment';
 
+// Type alias — keeps any existing import { type PaymentSettings } from '@/config/payments' working
+export type { AdminPaymentSettings as PaymentSettings };
+
 export async function getPaymentSettings(): Promise<AdminPaymentSettings> {
   return PaymentService.getAdminSettings();
 }
