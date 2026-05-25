@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 // ─── User & Auth ────────────────────────────────────────────────────────────
 
 export type UserRole = 'user' | 'employer' | 'admin';
-export type UserTier = 'free' | 'premium' | 'premium-annual' | 'employer-free' | 'employer-pro' | 'employer-enterprise';
+export type UserTier = 'free' | 'premium' | 'premium-annual' | 'employer-free' | 'employer-pro' | 'employer-enterprise' | 'employer-growth' | 'employer-scale';
 
 export interface AppUser {
   uid: string;
