@@ -178,8 +178,10 @@ export const PaymentService = {
     });
 
     // Update user profile
+    const isEmployerPlan = plan === 'employer-growth' || plan === 'employer-scale';
     await updateDoc(doc(db, 'users', userId), {
       tier:              plan,
+      ...(isEmployerPlan ? { employerTier: plan } : {}),
       premiumSince:      serverTimestamp(),
       premiumExpiresAt:  Timestamp.fromDate(new Date(Date.now() + days * 86400_000)),
       premiumPlan:       plan,
@@ -213,8 +215,10 @@ export const PaymentService = {
       confirmedAt:      serverTimestamp(),
     });
 
+    const isEmployerPlan = plan === 'employer-growth' || plan === 'employer-scale';
     await updateDoc(doc(db, 'users', userId), {
       tier:             plan,
+      ...(isEmployerPlan ? { employerTier: plan } : {}),
       premiumSince:     serverTimestamp(),
       premiumExpiresAt: Timestamp.fromDate(new Date(Date.now() + days * 86400_000)),
       premiumPlan:      plan,
