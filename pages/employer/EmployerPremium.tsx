@@ -213,7 +213,9 @@ export default function EmployerPremium() {
     PaymentService.getAdminSettings().then(setSettings).catch(() => {});
   }, []);
 
-  const isPremium = user?.employerTier === 'employer-growth' || user?.employerTier === 'employer-scale';
+  const isPremium =
+    user?.employerTier === 'employer-growth' || user?.employerTier === 'employer-scale' ||
+    (user?.tier as string) === 'employer-growth' || (user?.tier as string) === 'employer-scale';
   const rate      = settings?.ngnPerUSD ?? 1470;
 
   const growthUSD = settings?.employerGrowthUSD ?? 10;
@@ -270,7 +272,7 @@ export default function EmployerPremium() {
             <div>
               <p className="font-semibold text-primary-800 dark:text-primary-200">You&apos;re on a Premium employer plan!</p>
               <p className="text-sm text-primary-600 dark:text-primary-400 mt-0.5 capitalize">
-                Active plan: {user?.employerTier === 'employer-scale' ? 'Scale' : 'Growth'}
+                Active plan: {(user?.employerTier === 'employer-scale' || (user?.tier as string) === 'employer-scale') ? 'Scale' : 'Growth'}
               </p>
             </div>
             <button
@@ -324,7 +326,7 @@ export default function EmployerPremium() {
             accent
             features={GROWTH_FEATURES}
             cta="Upgrade to Growth"
-            isActive={user?.employerTier === 'employer-growth'}
+            isActive={user?.employerTier === 'employer-growth' || (user?.tier as string) === 'employer-growth'}
             isFree={false}
             onSelect={() => handleSelect('employer-growth')}
           />
@@ -340,7 +342,7 @@ export default function EmployerPremium() {
             accent={false}
             features={SCALE_FEATURES}
             cta="Upgrade to Scale"
-            isActive={user?.employerTier === 'employer-scale'}
+            isActive={user?.employerTier === 'employer-scale' || (user?.tier as string) === 'employer-scale'}
             isFree={false}
             onSelect={() => handleSelect('employer-scale')}
           />
