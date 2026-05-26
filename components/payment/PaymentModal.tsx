@@ -4,11 +4,16 @@
 // Shows bank-transfer flow for Nigerian users (or fallback)
 // Shows Flutterwave flow for all other African countries.
 // Pricing is fetched from AdminPaymentSettings so admin can change without code.
+//
+// FIXES:
+// 1. Errors now show INSIDE the modal (not silently behind it on the page).
+// 2. Modal uses FALLBACK_SETTINGS if Firestore read fails — no infinite spinner.
+// 3. "I've Paid" success shows a proper confirmation screen before closing.
 
 import { useState, useEffect, useCallback } from 'react';
 import {
   FiX, FiCopy, FiCheck, FiAlertCircle,
-  FiCreditCard, FiBriefcase, FiInfo,
+  FiCreditCard, FiBriefcase, FiInfo, FiCheckCircle,
 } from 'react-icons/fi';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { PaymentService } from '@/src/services/payment';
@@ -17,6 +22,22 @@ import type {
 } from '@/src/services/payment';
 import type { AppUser } from '@/types';
 import { FLUTTERWAVE_PUBLIC_KEY } from '@/config/payments';
+
+// ── Fallback settings (used when Firestore read fails) ────────────────────────
+const FALLBACK_SETTINGS: AdminPaymentSettings = {
+  bankName: 'Access Bank',
+  accountName: 'JoblifyHQ Ltd',
+  accountNumber: '0000000000',
+  premiumMonthlyUSD: 4,
+  premiumAnnualUSD: 40,
+  employerGrowthUSD: 10,
+  employerScaleUSD: 25,
+  boostUSD: 3,
+  featuredJobUSD: 5,
+  scholarshipBoostUSD: 3,
+  ngnPerUSD: 1470,
+  flutterwaveEnabled: true,
+};
 
 // ── Plan metadata ─────────────────────────────────────────────────────────────
 
@@ -53,19 +74,27 @@ function getAmountUSD(plan: PaymentPlan, s: AdminPaymentSettings): number {
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** The plan the user wants to buy */
   plan: PaymentPlan;
-  /** Logged-in user */
   user: AppUser;
-  /** Whether the user is from Nigeria (pass result of your geo-detect hook) */
   isNigeria: boolean;
-  /** Called after a successful payment (manual claim or FLW success) */
   onSuccess: (msg: string) => void;
-  /** Called after a hard error */
   onError: (msg: string) => void;
+  /** Optional: pass pre-fetched settings from parent to skip internal fetch */
+  settings?: AdminPaymentSettings;
 }
 
-// ── Internal: manual transfer sub-component ───────────────────────────────────
+// ── Internal error banner ─────────────────────────────────────────────────────
+
+function ErrorBanner({ msg }: { msg: string }) {
+  return (
+    <div className="flex items-start gap-2.5 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-400">
+      <FiAlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+      {msg}
+    </div>
+  );
+}
+
+// ── Manual transfer sub-component ─────────────────────────────────────────────
 
 function ManualTransferFlow({
   settings,
@@ -74,7 +103,6 @@ function ManualTransferFlow({
   amountNGN,
   amountUSD,
   onSuccess,
-  onError,
   onClose,
 }: {
   settings: AdminPaymentSettings;
@@ -83,14 +111,15 @@ function ManualTransferFlow({
   amountNGN: number;
   amountUSD: number;
   onSuccess: (msg: string) => void;
-  onError: (msg: string) => void;
   onClose: () => void;
 }) {
-  const [copied, setCopied] = useState<string | null>(null);
-  const [note, setNote] = useState('');
+  const [copied, setCopied]       = useState<string | null>(null);
+  const [note, setNote]           = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [step, setStep] = useState<'details' | 'confirm'>('details');
+  const [step, setStep]           = useState<'details' | 'confirm'>('details');
+  // FIX: error shown INSIDE the modal so user sees it immediately
+  const [localError, setLocalError] = useState('');
 
   const copy = (val: string, key: string) => {
     navigator.clipboard.writeText(val).catch(() => {});
@@ -100,52 +129,73 @@ function ManualTransferFlow({
 
   const handleIHavePaid = async () => {
     setSubmitting(true);
+    setLocalError('');
     try {
-      // Create the payment record first (status=pending)
       const payment: PendingPayment = await PaymentService.createPendingPayment({
         user,
         plan,
         method: 'manual_transfer',
         settings,
       });
-      // Record user's claim
       await PaymentService.submitManualTransferClaim(payment.id, note || undefined);
       setPendingId(payment.id);
       setStep('confirm');
-    } catch (err) {
-      console.error(err);
-      onError('Could not submit your claim. Please try again.');
+      // Also notify parent so it can show success banner after modal closes
+      onSuccess('✅ Transfer claim submitted! We will confirm and activate your plan within a few hours.');
+    } catch (err: unknown) {
+      console.error('[PaymentModal] claim error:', err);
+      const raw = err instanceof Error ? err.message : String(err);
+      if (raw.includes('permission') || raw.includes('Missing or insufficient')) {
+        setLocalError('Permission error saving your payment record. Please contact support.');
+      } else if (raw.includes('network') || raw.includes('unavailable')) {
+        setLocalError('Network error. Check your connection and try again.');
+      } else {
+        setLocalError('Could not submit your claim. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ── Confirmation screen (shown after successful claim) ────────────────────
   if (step === 'confirm') {
     return (
       <div className="py-6 text-center space-y-4">
-        <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto">
-          <FiAlertCircle size={32} className="text-yellow-600" />
+        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+          <FiCheckCircle size={32} className="text-green-600" />
         </div>
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-          Transfer Submitted — Awaiting Confirmation
+          Claim Submitted Successfully!
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto leading-relaxed">
-          Your claim has been received (ref: <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{pendingId?.slice(0, 10)}</span>).
-          Once we confirm your transfer, your plan will be activated — usually within a few hours.
+          We have received your transfer notification
+          {pendingId && (
+            <> (ref: <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{pendingId.slice(0, 10)}</span>)</>
+          )}.
         </p>
-        <p className="text-xs text-gray-400">You can close this window. Check your dashboard for status updates.</p>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-left space-y-1.5">
+          <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-300">What happens next?</p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-400">1. Our team verifies your bank transfer — usually within a few hours on business days.</p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-400">2. Once confirmed, your plan will be activated automatically.</p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-400">3. You will see your new plan reflected in your dashboard.</p>
+        </div>
+        <p className="text-xs text-gray-400">You can close this window and check your dashboard for status updates.</p>
         <button
           onClick={onClose}
           className="mt-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition"
         >
-          Done
+          Done — Go to Dashboard
         </button>
       </div>
     );
   }
 
+  // ── Details screen ────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
+      {/* Internal error banner — shows INSIDE modal */}
+      {localError && <ErrorBanner msg={localError} />}
+
       {/* Rate notice */}
       <div className="flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300">
         <FiInfo size={14} className="flex-shrink-0 mt-0.5" />
@@ -162,10 +212,10 @@ function ManualTransferFlow({
         </p>
 
         {[
-          { label: 'Bank Name',       value: settings.bankName },
-          { label: 'Account Name',    value: settings.accountName },
-          { label: 'Account Number',  value: settings.accountNumber },
-          { label: 'Amount (NGN)',     value: `₦${amountNGN.toLocaleString()}` },
+          { label: 'Bank Name',      value: settings.bankName },
+          { label: 'Account Name',   value: settings.accountName },
+          { label: 'Account Number', value: settings.accountNumber },
+          { label: 'Amount (NGN)',    value: `₦${amountNGN.toLocaleString()}` },
         ].map(({ label, value }) => (
           <div key={label} className="flex items-center justify-between gap-3">
             <div>
@@ -192,7 +242,7 @@ function ManualTransferFlow({
           type="text"
           value={note}
           onChange={e => setNote(e.target.value)}
-          placeholder="e.g. John Doe — Premium Monthly"
+          placeholder="e.g. John Doe — Employer Growth"
           className="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
@@ -219,7 +269,7 @@ function ManualTransferFlow({
   );
 }
 
-// ── Internal: Flutterwave sub-component ───────────────────────────────────────
+// ── Flutterwave sub-component ─────────────────────────────────────────────────
 
 function FlutterwaveFlow({
   settings,
@@ -241,6 +291,7 @@ function FlutterwaveFlow({
   onClose: () => void;
 }) {
   const [processing, setProcessing] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const handleFlutterPayment = useFlutterwave({
     public_key: FLUTTERWAVE_PUBLIC_KEY,
@@ -262,8 +313,8 @@ function FlutterwaveFlow({
 
   const initPayment = useCallback(async () => {
     setProcessing(true);
+    setLocalError('');
 
-    // Create a pending record first so we can tie FLW response to it
     let payment: PendingPayment;
     try {
       payment = await PaymentService.createPendingPayment({
@@ -274,7 +325,7 @@ function FlutterwaveFlow({
       });
     } catch (err) {
       console.error(err);
-      onError('Could not initialise payment. Please try again.');
+      setLocalError('Could not initialise payment. Please try again.');
       setProcessing(false);
       return;
     }
@@ -302,7 +353,7 @@ function FlutterwaveFlow({
           }
         } else {
           await PaymentService.cancelPayment(payment.id);
-          onError('Payment was not completed. Please try again.');
+          setLocalError('Payment was not completed. Please try again.');
         }
         setProcessing(false);
       },
@@ -314,6 +365,8 @@ function FlutterwaveFlow({
 
   return (
     <div className="space-y-4">
+      {localError && <ErrorBanner msg={localError} />}
+
       {/* Rate notice */}
       <div className="flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300">
         <FiInfo size={14} className="flex-shrink-0 mt-0.5" />
@@ -360,23 +413,26 @@ export default function PaymentModal({
   isNigeria,
   onSuccess,
   onError,
+  settings: settingsProp,
 }: PaymentModalProps) {
-  const [settings, setSettings] = useState<AdminPaymentSettings | null>(null);
-  const [loadingSettings, setLoadingSettings] = useState(true);
-  // Allow user to manually switch method
-  const [method, setMethod] = useState<'auto' | 'manual' | 'flutterwave'>('auto');
+  // FIX: use prop settings if passed (from parent), otherwise fetch internally.
+  // On fetch failure, fall back to FALLBACK_SETTINGS — no infinite spinner.
+  const [settings, setSettings]         = useState<AdminPaymentSettings>(settingsProp ?? FALLBACK_SETTINGS);
+  const [loadingSettings, setLoadingSettings] = useState(!settingsProp);
+  const [method, setMethod]             = useState<'auto' | 'manual' | 'flutterwave'>('auto');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || settingsProp) return;
     setLoadingSettings(true);
     PaymentService.getAdminSettings()
-      .then(setSettings)
-      .catch(() => setSettings(null))
+      .then(s => setSettings(s))
+      .catch(() => setSettings(FALLBACK_SETTINGS)) // never null — always usable
       .finally(() => setLoadingSettings(false));
-  }, [isOpen]);
+  }, [isOpen, settingsProp]);
 
   if (!isOpen) return null;
-  if (loadingSettings || !settings) {
+
+  if (loadingSettings) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 flex flex-col items-center gap-4">
@@ -390,12 +446,11 @@ export default function PaymentModal({
   const amountUSD = getAmountUSD(plan, settings);
   const amountNGN = Math.round(amountUSD * settings.ngnPerUSD);
 
-  // Determine which flow to show
   const resolvedMethod: 'manual' | 'flutterwave' =
-    method === 'manual' ? 'manual'
+    method === 'manual'      ? 'manual'
     : method === 'flutterwave' ? 'flutterwave'
-    : isNigeria ? 'manual'     // Nigerian default
-    : 'flutterwave';           // Everyone else
+    : isNigeria               ? 'manual'
+    : 'flutterwave';
 
   const showFlutterwaveToggle = settings.flutterwaveEnabled;
 
@@ -423,7 +478,6 @@ export default function PaymentModal({
         {/* Method switcher */}
         <div className="px-5 pt-4">
           <div className="flex gap-2">
-            {/* Manual always shown */}
             <button
               onClick={() => setMethod('manual')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
@@ -438,7 +492,6 @@ export default function PaymentModal({
               )}
             </button>
 
-            {/* Flutterwave — only if enabled in admin settings */}
             {showFlutterwaveToggle && (
               <button
                 onClick={() => setMethod('flutterwave')}
@@ -453,7 +506,6 @@ export default function PaymentModal({
             )}
           </div>
 
-          {/* Contextual sub-label */}
           <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2 text-center">
             {resolvedMethod === 'manual'
               ? isNigeria
@@ -473,7 +525,6 @@ export default function PaymentModal({
               amountNGN={amountNGN}
               amountUSD={amountUSD}
               onSuccess={onSuccess}
-              onError={onError}
               onClose={onClose}
             />
           ) : (
