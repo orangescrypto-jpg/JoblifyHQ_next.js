@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import {
   FiSave, FiDollarSign, FiCreditCard, FiRefreshCw,
   FiAlertCircle, FiCheckCircle, FiToggleLeft, FiToggleRight,
-  FiInfo,
+  FiInfo, FiStar,
 } from 'react-icons/fi';
 import { PaymentService } from '@/src/services/payment';
 import type { AdminPaymentSettings } from '@/src/services/payment';
@@ -239,6 +239,44 @@ export default function AdminSettings() {
               onChange={v => set('employerScaleUSD', Number(v))}
               prefix="$"
               placeholder="25"
+            />
+          </Field>
+        </div>
+      </section>
+
+      {/* ── Section: Featured & Boost Pricing ────────────────────────────────── */}
+      <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 space-y-4">
+        <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <FiStar size={16} className="text-yellow-500" /> Featured & Boost Pricing (USD)
+        </h2>
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          One-time fees charged to employers or admins to feature a job listing or boost a scholarship.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field
+            label="Featured Job Listing"
+            hint={`Currently ≈ ${toNGN(Number(form.featuredJobUSD))} · one-time per listing`}
+          >
+            <Input
+              type="number"
+              value={form.featuredJobUSD ?? 5}
+              onChange={v => set('featuredJobUSD', Number(v))}
+              prefix="$"
+              placeholder="5"
+            />
+          </Field>
+
+          <Field
+            label="Scholarship Boost"
+            hint={`Currently ≈ ${toNGN(Number(form.scholarshipBoostUSD))} · one-time per listing`}
+          >
+            <Input
+              type="number"
+              value={form.scholarshipBoostUSD ?? 3}
+              onChange={v => set('scholarshipBoostUSD', Number(v))}
+              prefix="$"
+              placeholder="3"
             />
           </Field>
         </div>
