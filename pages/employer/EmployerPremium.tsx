@@ -27,16 +27,18 @@ import type { AppUser } from '@/types';
 // always opens even before the admin has saved custom prices.
 
 const FALLBACK_SETTINGS: AdminPaymentSettings = {
-  ngnPerUSD:          1470,
-  premiumMonthlyUSD:  4,
-  premiumAnnualUSD:   36,
-  employerGrowthUSD:  10,
-  employerScaleUSD:   25,
-  boostUSD:           5,
-  flutterwaveEnabled: true,
-  bankName:           '',
-  accountNumber:      '',
-  accountName:        '',
+  ngnPerUSD:            1470,
+  premiumMonthlyUSD:    4,
+  premiumAnnualUSD:     36,
+  employerGrowthUSD:    10,
+  employerScaleUSD:     25,
+  boostUSD:             5,
+  featuredJobUSD:       5,
+  scholarshipBoostUSD:  3,
+  flutterwaveEnabled:   true,
+  bankName:             '',
+  accountNumber:        '',
+  accountName:          '',
 };
 
 // ── Perks ─────────────────────────────────────────────────────────────────────
