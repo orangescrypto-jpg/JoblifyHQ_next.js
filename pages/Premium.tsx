@@ -3,6 +3,11 @@
 // ─── Premium Plans Page (Job Seekers) ────────────────────────────────────────
 // Uses PaymentService via PaymentModal — zero direct Firebase imports.
 // Pricing is driven from AdminPaymentSettings (editable in /admin/settings).
+//
+// FIXES (same as EmployerPremium):
+// 1. FALLBACK_SETTINGS used when Firestore read fails — no null settings.
+// 2. resolvedSettings passed into PaymentModal so modal never spins forever.
+// 3. settingsLoading state so UI renders immediately with fallback prices.
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -17,6 +22,22 @@ import { PaymentService } from '@/src/services/payment';
 import type { AdminPaymentSettings } from '@/src/services/payment';
 import type { AppUser } from '@/types';
 import type { PaymentPlan } from '@/src/services/payment';
+
+// ── Default fallback settings ─────────────────────────────────────────────────
+const FALLBACK_SETTINGS: AdminPaymentSettings = {
+  ngnPerUSD:            1470,
+  premiumMonthlyUSD:    4,
+  premiumAnnualUSD:     40,
+  employerGrowthUSD:    10,
+  employerScaleUSD:     25,
+  boostUSD:             5,
+  featuredJobUSD:       5,
+  scholarshipBoostUSD:  3,
+  flutterwaveEnabled:   true,
+  bankName:             '',
+  accountNumber:        '',
+  accountName:          '',
+};
 
 // ── FAQs ─────────────────────────────────────────────────────────────────────
 
@@ -99,19 +120,15 @@ function PlanCard({
   const isFree = plan === 'free';
 
   return (
-    <div
-      className={`relative bg-white dark:bg-gray-800 rounded-2xl flex flex-col ${
-        accent
-          ? 'border-2 border-primary-500 shadow-xl'
-          : 'border border-gray-200 dark:border-gray-700'
-      }`}
-    >
+    <div className={`relative bg-white dark:bg-gray-800 rounded-2xl flex flex-col ${
+      accent
+        ? 'border-2 border-primary-500 shadow-xl'
+        : 'border border-gray-200 dark:border-gray-700'
+    }`}>
       {badge && (
-        <span
-          className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs px-4 py-1 rounded-full font-semibold whitespace-nowrap ${
-            accent ? 'bg-primary-600 text-white' : 'bg-purple-600 text-white'
-          }`}
-        >
+        <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs px-4 py-1 rounded-full font-semibold whitespace-nowrap ${
+          accent ? 'bg-primary-600 text-white' : 'bg-purple-600 text-white'
+        }`}>
           {badge}
         </span>
       )}
@@ -119,21 +136,23 @@ function PlanCard({
       <div className="p-6 flex flex-col flex-1">
         {/* Pricing */}
         <div className="mb-5">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{plan === 'premium-annual' ? 'Annual' : plan === 'free' ? 'Free' : 'Premium'}</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+            {plan === 'premium-annual' ? 'Annual' : plan === 'free' ? 'Free' : 'Premium'}
+          </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{description}</p>
 
           <div className="flex items-baseline gap-1 mt-3">
-            {isFree ? (
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">$0</span>
-            ) : (
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">${usd}</span>
-            )}
+            {isFree
+              ? <span className="text-4xl font-bold text-gray-900 dark:text-white">$0</span>
+              : <span className="text-4xl font-bold text-gray-900 dark:text-white">${usd}</span>
+            }
             <span className="text-sm text-gray-500 dark:text-gray-400">/{period}</span>
           </div>
 
           {!isFree && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              ≈ ₦{ngn.toLocaleString()} <span className="text-gray-300 dark:text-gray-600">(1 USD = ₦{rate.toLocaleString()})</span>
+              ≈ ₦{ngn.toLocaleString()}{' '}
+              <span className="text-gray-300 dark:text-gray-600">(1 USD = ₦{rate.toLocaleString()})</span>
             </p>
           )}
           {subtext && (
@@ -144,12 +163,9 @@ function PlanCard({
         {/* Features */}
         <ul className="space-y-2.5 mb-6 flex-1">
           {features.map((f) => (
-            <li
-              key={f.text}
-              className={`flex items-start gap-2.5 text-sm ${
-                f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'
-              }`}
-            >
+            <li key={f.text} className={`flex items-start gap-2.5 text-sm ${
+              f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'
+            }`}>
               {f.included
                 ? <FiCheck className="text-green-500 flex-shrink-0 mt-0.5" size={15} />
                 : <FiX className="text-gray-300 dark:text-gray-600 flex-shrink-0 mt-0.5" size={15} />
@@ -176,9 +192,10 @@ function PlanCard({
                   : 'bg-purple-600 hover:bg-purple-700 text-white'
             }`}
           >
-            {loading ? (
-              <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Processing…</>
-            ) : isActive ? '✓ Active Plan' : cta}
+            {loading
+              ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Processing…</>
+              : isActive ? '✓ Active Plan' : cta
+            }
           </button>
         )}
       </div>
@@ -193,18 +210,26 @@ export default function Premium() {
   const router = useRouter();
   const { isNigeria } = useNigeria();
 
-  const [settings, setSettings] = useState<AdminPaymentSettings | null>(null);
-  const [modalPlan, setModalPlan] = useState<PaymentPlan | null>(null);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [settings, setSettings]         = useState<AdminPaymentSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [modalPlan, setModalPlan]       = useState<PaymentPlan | null>(null);
+  const [success, setSuccess]           = useState('');
+  const [error, setError]               = useState('');
+  const [openFaq, setOpenFaq]           = useState<number | null>(null);
 
   useEffect(() => {
-    PaymentService.getAdminSettings().then(setSettings).catch(() => {});
+    setSettingsLoading(true);
+    PaymentService.getAdminSettings()
+      .then(s => setSettings(s))
+      .catch(() => setSettings(FALLBACK_SETTINGS))
+      .finally(() => setSettingsLoading(false));
   }, []);
 
+  // Always non-null — fallback used if Firestore read fails
+  const resolvedSettings = settings ?? FALLBACK_SETTINGS;
+
   const isPremium = user?.tier === 'premium' || user?.tier === 'premium-annual';
-  const rate = settings?.ngnPerUSD ?? 1470;
+  const rate      = resolvedSettings.ngnPerUSD;
 
   const plans = [
     {
@@ -218,22 +243,22 @@ export default function Premium() {
       cta: 'Current Free Plan',
       disabled: true,
       features: [
-        { text: 'Browse all jobs & scholarships', included: true },
-        { text: 'Save up to 5 jobs', included: true },
-        { text: 'Apply to jobs', included: true },
-        { text: '1 job alert', included: true },
-        { text: 'Basic profile', included: true },
-        { text: 'Profile boost in employer search', included: false },
-        { text: 'See who viewed your profile', included: false },
-        { text: 'Unlimited job alerts', included: false },
-        { text: 'Application status tracking', included: false },
-        { text: 'Featured applicant badge', included: false },
+        { text: 'Browse all jobs & scholarships',       included: true  },
+        { text: 'Save up to 5 jobs',                    included: true  },
+        { text: 'Apply to jobs',                        included: true  },
+        { text: '1 job alert',                          included: true  },
+        { text: 'Basic profile',                        included: true  },
+        { text: 'Profile boost in employer search',     included: false },
+        { text: 'See who viewed your profile',          included: false },
+        { text: 'Unlimited job alerts',                 included: false },
+        { text: 'Application status tracking',          included: false },
+        { text: 'Featured applicant badge',             included: false },
       ],
     },
     {
       plan: 'premium' as PaymentPlan,
-      usd: settings?.premiumMonthlyUSD ?? 4,
-      ngn: Math.round((settings?.premiumMonthlyUSD ?? 4) * rate),
+      usd: resolvedSettings.premiumMonthlyUSD,
+      ngn: Math.round(resolvedSettings.premiumMonthlyUSD * rate),
       accent: true,
       period: 'per month',
       description: 'For active job seekers who want to stand out and move faster.',
@@ -241,40 +266,40 @@ export default function Premium() {
       cta: 'Upgrade to Premium',
       disabled: false,
       features: [
-        { text: 'Everything in Free', included: true },
-        { text: 'Unlimited saved jobs & scholarships', included: true },
-        { text: 'Profile boost in employer search', included: true },
-        { text: 'See who viewed your profile', included: true },
-        { text: 'Unlimited job alerts', included: true },
-        { text: 'Application status tracking', included: true },
-        { text: 'Priority support', included: true },
-        { text: 'Early access to new features', included: true },
-        { text: 'Featured applicant badge', included: false },
-        { text: 'Expert CV review (1×/year)', included: false },
+        { text: 'Everything in Free',                   included: true  },
+        { text: 'Unlimited saved jobs & scholarships',  included: true  },
+        { text: 'Profile boost in employer search',     included: true  },
+        { text: 'See who viewed your profile',          included: true  },
+        { text: 'Unlimited job alerts',                 included: true  },
+        { text: 'Application status tracking',          included: true  },
+        { text: 'Priority support',                     included: true  },
+        { text: 'Early access to new features',         included: true  },
+        { text: 'Featured applicant badge',             included: false },
+        { text: 'Expert CV review (1×/year)',           included: false },
       ],
     },
     {
       plan: 'premium-annual' as PaymentPlan,
-      usd: settings?.premiumAnnualUSD ?? 40,
-      ngn: Math.round((settings?.premiumAnnualUSD ?? 40) * rate),
+      usd: resolvedSettings.premiumAnnualUSD,
+      ngn: Math.round(resolvedSettings.premiumAnnualUSD * rate),
       accent: false,
       period: 'per year',
-      subtext: `equivalent to $${((settings?.premiumAnnualUSD ?? 40) / 12).toFixed(2)}/mo`,
-      description: `Best value for serious career builders. Save $${((settings?.premiumMonthlyUSD ?? 4) * 12) - (settings?.premiumAnnualUSD ?? 40)} vs monthly.`,
+      subtext: `equivalent to $${(resolvedSettings.premiumAnnualUSD / 12).toFixed(2)}/mo`,
+      description: `Best value for serious career builders. Save $${(resolvedSettings.premiumMonthlyUSD * 12) - resolvedSettings.premiumAnnualUSD} vs monthly.`,
       badge: 'Best Value',
       cta: 'Get Annual Plan',
       disabled: false,
       features: [
-        { text: 'Everything in Premium', included: true },
+        { text: 'Everything in Premium',                    included: true },
         { text: 'Featured applicant badge on applications', included: true },
-        { text: 'Expert CV review (1×/year)', included: true },
-        { text: 'Dedicated career tips newsletter', included: true },
-        { text: 'Locked-in price guarantee', included: true },
-        { text: 'Unlimited saved jobs & scholarships', included: true },
-        { text: 'Profile boost in employer search', included: true },
-        { text: 'See who viewed your profile', included: true },
-        { text: 'Unlimited job alerts', included: true },
-        { text: 'Application status tracking', included: true },
+        { text: 'Expert CV review (1×/year)',               included: true },
+        { text: 'Dedicated career tips newsletter',         included: true },
+        { text: 'Locked-in price guarantee',                included: true },
+        { text: 'Unlimited saved jobs & scholarships',      included: true },
+        { text: 'Profile boost in employer search',         included: true },
+        { text: 'See who viewed your profile',              included: true },
+        { text: 'Unlimited job alerts',                     included: true },
+        { text: 'Application status tracking',              included: true },
       ],
     },
   ];
@@ -291,7 +316,6 @@ export default function Premium() {
           <p className="text-primary-100 text-lg max-w-xl mx-auto leading-relaxed">
             Unlock tools that get you noticed by employers, keep you ahead of deadlines, and move your African career forward.
           </p>
-          {/* Geo notice */}
           <div className="mt-6 inline-flex items-center gap-2 text-xs bg-white/10 px-4 py-2 rounded-full">
             {isNigeria
               ? '🇳🇬 Nigerian users — bank transfer available at checkout'
@@ -303,12 +327,17 @@ export default function Premium() {
       <div className="max-w-5xl mx-auto px-4 py-12">
         {/* Alerts */}
         {success && (
-          <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm text-center">{success}</div>
+          <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm text-center">
+            {success}
+          </div>
         )}
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center">{error}</div>
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center">
+            {error}
+          </div>
         )}
 
+        {/* Active plan banner */}
         {isPremium && (
           <div className="mb-10 p-5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-2xl flex items-center gap-4">
             <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center text-primary-600">
@@ -329,6 +358,24 @@ export default function Premium() {
           </div>
         )}
 
+        {/* Rate info bar */}
+        {!isPremium && !settingsLoading && (
+          <div className="mb-8 flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300">
+            <span>
+              Prices in USD. Naira equivalent shown at reference rate{' '}
+              <strong>1 USD = ₦{rate.toLocaleString()}</strong>.{' '}
+              {isNigeria
+                ? 'Nigerian users can pay via bank transfer at checkout.'
+                : 'Pay instantly via card or mobile money through Flutterwave.'}
+            </span>
+          </div>
+        )}
+
+        {/* Loading skeleton for rate bar */}
+        {!isPremium && settingsLoading && (
+          <div className="mb-8 h-10 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900 rounded-xl animate-pulse" />
+        )}
+
         {/* Plan cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {plans.map((p) => (
@@ -341,6 +388,7 @@ export default function Premium() {
               loading={false}
               onSelect={(plan) => {
                 if (!user) { router.push('/login'); return; }
+                setError('');
                 setModalPlan(plan);
               }}
             />
@@ -391,7 +439,7 @@ export default function Premium() {
         </div>
       </div>
 
-      {/* Payment modal */}
+      {/* Payment modal — passes resolvedSettings so it never spins or fails silently */}
       {modalPlan && user && (
         <PaymentModal
           isOpen={!!modalPlan}
@@ -399,8 +447,9 @@ export default function Premium() {
           plan={modalPlan}
           user={user as AppUser}
           isNigeria={isNigeria}
+          settings={resolvedSettings}
           onSuccess={(msg) => { setSuccess(msg); setModalPlan(null); }}
-          onError={(msg) => { setError(msg); }}
+          onError={(msg) => setError(msg)}
         />
       )}
     </div>
