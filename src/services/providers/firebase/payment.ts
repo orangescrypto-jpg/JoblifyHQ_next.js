@@ -52,6 +52,9 @@ export interface AdminPaymentSettings {
   employerGrowthUSD: number;
   employerScaleUSD: number;
   boostUSD: number;
+  // Boost / featured pricing
+  featuredJobUSD: number;       // cost to feature a single job listing
+  scholarshipBoostUSD: number;  // cost to boost a scholarship listing
   // Exchange rate for display/manual payments
   ngnPerUSD: number;
   // Toggle Flutterwave for non-NG users
@@ -68,6 +71,8 @@ export const DEFAULT_SETTINGS: AdminPaymentSettings = {
   employerGrowthUSD: 10,
   employerScaleUSD: 25,
   boostUSD: 3,
+  featuredJobUSD: 5,
+  scholarshipBoostUSD: 3,
   ngnPerUSD: 1470,
   flutterwaveEnabled: true,
 };
