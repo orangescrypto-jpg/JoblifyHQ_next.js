@@ -4,13 +4,17 @@
 // Uses PaymentModal (dual flow: bank transfer for NG, Flutterwave for rest).
 // Pricing pulled live from AdminPaymentSettings — no hardcoded amounts.
 // Zero direct Firebase imports.
+//
+// FIX: Modal now opens with default fallback settings when Firestore
+// admin_config/payment_settings cannot be read (e.g. missing Firestore rule).
+// Previously `settings === null` silently blocked the modal from ever opening.
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import {
   FiCheck, FiZap, FiStar, FiShield, FiUsers,
-  FiEye, FiTrendingUp, FiAward, FiX, FiInfo,
+  FiEye, FiTrendingUp, FiAward, FiX, FiInfo, FiLoader,
 } from 'react-icons/fi';
 import PaymentModal from '@/components/payment/PaymentModal';
 import { useNigeria } from '@/hooks/useNigeria';
@@ -18,13 +22,30 @@ import { PaymentService } from '@/src/services/payment';
 import type { AdminPaymentSettings, PaymentPlan } from '@/src/services/payment';
 import type { AppUser } from '@/types';
 
+// ── Default fallback settings (used if Firestore read fails) ──────────────────
+// These match the hardcoded defaults in AdminPaymentSettings so the modal
+// always opens even before the admin has saved custom prices.
+
+const FALLBACK_SETTINGS: AdminPaymentSettings = {
+  ngnPerUSD:          1470,
+  premiumMonthlyUSD:  4,
+  premiumAnnualUSD:   36,
+  employerGrowthUSD:  10,
+  employerScaleUSD:   25,
+  boostUSD:           5,
+  flutterwaveEnabled: true,
+  bankName:           '',
+  accountNumber:      '',
+  accountName:        '',
+};
+
 // ── Perks ─────────────────────────────────────────────────────────────────────
 
 const PERKS = [
-  { icon: FiTrendingUp, title: '3\u00d7 More Applications',  desc: 'Featured listings appear at the top of search and the homepage.' },
-  { icon: FiUsers,      title: 'Applicant Pipeline',     desc: 'Move candidates from Applied \u2192 Shortlisted \u2192 Hired in one board.' },
+  { icon: FiTrendingUp, title: '3× More Applications',  desc: 'Featured listings appear at the top of search and the homepage.' },
+  { icon: FiUsers,      title: 'Applicant Pipeline',     desc: 'Move candidates from Applied → Shortlisted → Hired in one board.' },
   { icon: FiEye,        title: 'Actively Hiring Badge',  desc: "Show job seekers you're hiring now and get more quality applicants." },
-  { icon: FiShield,     title: 'Verified Badge',         desc: 'Build trust \u2014 verified employers get 40% more applications.' },
+  { icon: FiShield,     title: 'Verified Badge',         desc: 'Build trust — verified employers get 40% more applications.' },
   { icon: FiAward,      title: 'Analytics Dashboard',    desc: 'Track views, applications, and conversion for every job listing.' },
   { icon: FiStar,       title: 'Company Branding',       desc: 'Custom company page with logo, culture photos, and all open roles.' },
 ];
@@ -203,23 +224,37 @@ export default function EmployerPremium() {
   const router = useRouter();
   const { isNigeria } = useNigeria();
 
-  const [settings, setSettings] = useState<AdminPaymentSettings | null>(null);
-  const [modalPlan, setModalPlan] = useState<PaymentPlan | null>(null);
-  const [success, setSuccess] = useState('');
-  const [error, setError]     = useState('');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  // settings starts as null (loading); falls back to FALLBACK_SETTINGS on error
+  // so the Upgrade button always opens the modal regardless of Firestore rules.
+  const [settings, setSettings]     = useState<AdminPaymentSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [modalPlan, setModalPlan]   = useState<PaymentPlan | null>(null);
+  const [success, setSuccess]       = useState('');
+  const [error, setError]           = useState('');
+  const [openFaq, setOpenFaq]       = useState<number | null>(null);
 
   useEffect(() => {
-    PaymentService.getAdminSettings().then(setSettings).catch(() => {});
+    setSettingsLoading(true);
+    PaymentService.getAdminSettings()
+      .then((s) => setSettings(s))
+      .catch(() => {
+        // Firestore read failed (e.g. missing rule or no internet).
+        // Use hardcoded fallback so the Upgrade button still works.
+        setSettings(FALLBACK_SETTINGS);
+      })
+      .finally(() => setSettingsLoading(false));
   }, []);
+
+  // Resolved settings: while loading use fallback so prices render immediately.
+  const resolvedSettings = settings ?? FALLBACK_SETTINGS;
 
   const isPremium =
     user?.employerTier === 'employer-growth' || user?.employerTier === 'employer-scale' ||
     (user?.tier as string) === 'employer-growth' || (user?.tier as string) === 'employer-scale';
-  const rate      = settings?.ngnPerUSD ?? 1470;
 
-  const growthUSD = settings?.employerGrowthUSD ?? 10;
-  const scaleUSD  = settings?.employerScaleUSD  ?? 25;
+  const rate      = resolvedSettings.ngnPerUSD;
+  const growthUSD = resolvedSettings.employerGrowthUSD;
+  const scaleUSD  = resolvedSettings.employerScaleUSD;
   const growthNGN = Math.round(growthUSD * rate);
   const scaleNGN  = Math.round(scaleUSD  * rate);
 
@@ -284,8 +319,8 @@ export default function EmployerPremium() {
           </div>
         )}
 
-        {/* Rate info bar */}
-        {!isPremium && settings && (
+        {/* Rate info bar — shown once settings are resolved */}
+        {!isPremium && !settingsLoading && (
           <div className="mb-8 flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300">
             <FiInfo size={14} className="flex-shrink-0 mt-0.5" />
             <span>
@@ -296,6 +331,11 @@ export default function EmployerPremium() {
                 : 'Pay instantly via card or mobile money through Flutterwave.'}
             </span>
           </div>
+        )}
+
+        {/* Loading skeleton for rate bar */}
+        {!isPremium && settingsLoading && (
+          <div className="mb-8 h-10 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900 rounded-xl animate-pulse" />
         )}
 
         {/* Plan cards */}
@@ -395,14 +435,16 @@ export default function EmployerPremium() {
         </div>
       </div>
 
-      {/* Payment modal */}
-      {modalPlan && user && settings && (
+      {/* Payment modal — opens as long as user is logged in and a plan is selected.
+          Uses resolvedSettings (never null) so it always renders correctly. */}
+      {modalPlan && user && (
         <PaymentModal
           isOpen={!!modalPlan}
           onClose={() => setModalPlan(null)}
           plan={modalPlan}
           user={user as AppUser}
           isNigeria={isNigeria}
+          settings={resolvedSettings}
           onSuccess={(msg) => { setSuccess(msg); setModalPlan(null); }}
           onError={(msg) => setError(msg)}
         />
