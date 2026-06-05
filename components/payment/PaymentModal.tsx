@@ -1,8 +1,8 @@
 'use client';
 // components/payment/PaymentModal.tsx
 // ─── Dual Payment Modal ────────────────────────────────────────────────────────
-// Shows bank-transfer flow for Nigerian users (or fallback)
-// Shows Flutterwave flow for all other African countries.
+// Nigeria     → Manual bank transfer ONLY
+// Outside NG  → Flutterwave ONLY
 // Pricing is fetched from AdminPaymentSettings so admin can change without code.
 //
 // FIXES:
@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   FiX, FiCopy, FiCheck, FiAlertCircle,
-  FiCreditCard, FiBriefcase, FiInfo, FiCheckCircle,
+  FiCreditCard, FiInfo, FiCheckCircle,
 } from 'react-icons/fi';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { PaymentService } from '@/src/services/payment';
@@ -25,46 +25,51 @@ import { FLUTTERWAVE_PUBLIC_KEY } from '@/config/payments';
 
 // ── Fallback settings (used when Firestore read fails) ────────────────────────
 const FALLBACK_SETTINGS: AdminPaymentSettings = {
-  bankName: 'Access Bank',
-  accountName: 'JoblifyHQ Ltd',
-  accountNumber: '0000000000',
-  premiumMonthlyUSD: 4,
-  premiumAnnualUSD: 40,
-  employerGrowthUSD: 10,
-  employerScaleUSD: 25,
-  boostUSD: 3,
-  featuredJobUSD: 5,
+  bankName:            'Access Bank',
+  accountName:         'JoblifyHQ Ltd',
+  accountNumber:       '0000000000',
+  premiumMonthlyUSD:   4,
+  premiumAnnualUSD:    40,
+  employerGrowthUSD:   10,
+  employerScaleUSD:    25,
+  freelancerProUSD:    6,
+  boostUSD:            3,
+  featuredJobUSD:      5,
+  featuredGigUSD:      4,
   scholarshipBoostUSD: 3,
-  ngnPerUSD: 1470,
-  flutterwaveEnabled: true,
+  escrowFeePercent:    5,
+  ngnPerUSD:           1470,
+  flutterwaveEnabled:  true,
+  paystackEnabled:     true,
+  bankTransferEnabled: true,
 };
 
-// ── Plan metadata ─────────────────────────────────────────────────────────────
-
-export interface PlanMeta {
-  id: PaymentPlan;
-  label: string;
-  descriptionUSD: string;
-}
+// ── Plan helpers ──────────────────────────────────────────────────────────────
 
 function getPlanLabel(plan: PaymentPlan): string {
   const map: Record<PaymentPlan, string> = {
-    premium:           'Premium Monthly',
-    'premium-annual':  'Premium Annual',
-    'employer-growth': 'Employer Growth',
-    'employer-scale':  'Employer Scale',
-    boost:             'Profile / Listing Boost',
+    premium:            'Premium Monthly',
+    'premium-annual':   'Premium Annual',
+    'employer-growth':  'Employer Growth',
+    'employer-scale':   'Employer Scale',
+    'freelancer-pro':   'Freelancer Pro',
+    boost:              'Profile / Listing Boost',
+    featured_job:       'Featured Job',
+    featured_gig:       'Featured Gig',
   };
   return map[plan];
 }
 
 function getAmountUSD(plan: PaymentPlan, s: AdminPaymentSettings): number {
   const map: Record<PaymentPlan, number> = {
-    premium:           s.premiumMonthlyUSD,
-    'premium-annual':  s.premiumAnnualUSD,
-    'employer-growth': s.employerGrowthUSD,
-    'employer-scale':  s.employerScaleUSD,
-    boost:             s.boostUSD,
+    premium:            s.premiumMonthlyUSD,
+    'premium-annual':   s.premiumAnnualUSD,
+    'employer-growth':  s.employerGrowthUSD,
+    'employer-scale':   s.employerScaleUSD,
+    'freelancer-pro':   s.freelancerProUSD,
+    boost:              s.boostUSD,
+    featured_job:       s.featuredJobUSD,
+    featured_gig:       s.featuredGigUSD,
   };
   return map[plan];
 }
@@ -94,7 +99,7 @@ function ErrorBanner({ msg }: { msg: string }) {
   );
 }
 
-// ── Manual transfer sub-component ─────────────────────────────────────────────
+// ── Manual transfer sub-component (Nigeria only) ───────────────────────────────
 
 function ManualTransferFlow({
   settings,
@@ -113,13 +118,12 @@ function ManualTransferFlow({
   onSuccess: (msg: string) => void;
   onClose: () => void;
 }) {
-  const [copied, setCopied]       = useState<string | null>(null);
-  const [note, setNote]           = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [step, setStep]           = useState<'details' | 'confirm'>('details');
-  // FIX: error shown INSIDE the modal so user sees it immediately
-  const [localError, setLocalError] = useState('');
+  const [copied, setCopied]           = useState<string | null>(null);
+  const [note, setNote]               = useState('');
+  const [submitting, setSubmitting]   = useState(false);
+  const [pendingId, setPendingId]     = useState<string | null>(null);
+  const [step, setStep]               = useState<'details' | 'confirm'>('details');
+  const [localError, setLocalError]   = useState('');
 
   const copy = (val: string, key: string) => {
     navigator.clipboard.writeText(val).catch(() => {});
@@ -140,7 +144,6 @@ function ManualTransferFlow({
       await PaymentService.submitManualTransferClaim(payment.id, note || undefined);
       setPendingId(payment.id);
       setStep('confirm');
-      // Also notify parent so it can show success banner after modal closes
       onSuccess('✅ Transfer claim submitted! We will confirm and activate your plan within a few hours.');
     } catch (err: unknown) {
       console.error('[PaymentModal] claim error:', err);
@@ -157,7 +160,7 @@ function ManualTransferFlow({
     }
   };
 
-  // ── Confirmation screen (shown after successful claim) ────────────────────
+  // ── Confirmation screen ───────────────────────────────────────────────────
   if (step === 'confirm') {
     return (
       <div className="py-6 text-center space-y-4">
@@ -193,7 +196,6 @@ function ManualTransferFlow({
   // ── Details screen ────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {/* Internal error banner — shows INSIDE modal */}
       {localError && <ErrorBanner msg={localError} />}
 
       {/* Rate notice */}
@@ -215,7 +217,7 @@ function ManualTransferFlow({
           { label: 'Bank Name',      value: settings.bankName },
           { label: 'Account Name',   value: settings.accountName },
           { label: 'Account Number', value: settings.accountNumber },
-          { label: 'Amount (NGN)',    value: `₦${amountNGN.toLocaleString()}` },
+          { label: 'Amount (NGN)',   value: `₦${amountNGN.toLocaleString()}` },
         ].map(({ label, value }) => (
           <div key={label} className="flex items-center justify-between gap-3">
             <div>
@@ -269,7 +271,7 @@ function ManualTransferFlow({
   );
 }
 
-// ── Flutterwave sub-component ─────────────────────────────────────────────────
+// ── Flutterwave sub-component (outside Nigeria) ───────────────────────────────
 
 function FlutterwaveFlow({
   settings,
@@ -294,11 +296,11 @@ function FlutterwaveFlow({
   const [localError, setLocalError] = useState('');
 
   const handleFlutterPayment = useFlutterwave({
-    public_key: FLUTTERWAVE_PUBLIC_KEY,
-    tx_ref:     `JBF_${user.uid}_${plan}_${Date.now()}`,
-    amount:     amountNGN,
-    currency:   'NGN',
-    payment_options: 'card,mobilemoney,ussd,banktransfer',
+    public_key:      FLUTTERWAVE_PUBLIC_KEY,
+    tx_ref:          `JBF_${user.uid}_${plan}_${Date.now()}`,
+    amount:          amountUSD,
+    currency:        'USD',
+    payment_options: 'card,mobilemoney',
     customer: {
       email:        user.email || '',
       name:         user.displayName || user.name || 'JoblifyHQ User',
@@ -306,7 +308,7 @@ function FlutterwaveFlow({
     },
     customizations: {
       title:       'JoblifyHQ',
-      description: `${getPlanLabel(plan)} — ₦${amountNGN.toLocaleString()} (≈ $${amountUSD})`,
+      description: `${getPlanLabel(plan)} — $${amountUSD}`,
       logo:        'https://joblifyhq.com/logo.png',
     },
   });
@@ -367,12 +369,12 @@ function FlutterwaveFlow({
     <div className="space-y-4">
       {localError && <ErrorBanner msg={localError} />}
 
-      {/* Rate notice */}
+      {/* Info notice */}
       <div className="flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-700 dark:text-blue-300">
         <FiInfo size={14} className="flex-shrink-0 mt-0.5" />
         <span>
-          Price shown in USD. At checkout, Flutterwave converts using today&apos;s live rate.
-          Reference rate: <strong>1 USD ≈ ₦{settings.ngnPerUSD.toLocaleString()}</strong>.
+          You will be charged <strong>${amountUSD} USD</strong> via Flutterwave.
+          Cards and mobile money are supported.
         </span>
       </div>
 
@@ -380,7 +382,6 @@ function FlutterwaveFlow({
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
         <p className="text-xs text-gray-400 mb-1">You are paying</p>
         <p className="text-3xl font-bold text-gray-900 dark:text-white">${amountUSD}</p>
-        <p className="text-sm text-gray-400 mt-1">≈ ₦{amountNGN.toLocaleString()} at today&apos;s rate</p>
         <p className="text-xs text-gray-400 mt-0.5">for {getPlanLabel(plan)}</p>
       </div>
 
@@ -397,7 +398,7 @@ function FlutterwaveFlow({
       </button>
 
       <p className="text-center text-xs text-gray-400">
-        Secured by Flutterwave · Cards, USSD, Mobile Money supported
+        Secured by Flutterwave · Cards and Mobile Money supported
       </p>
     </div>
   );
@@ -415,18 +416,15 @@ export default function PaymentModal({
   onError,
   settings: settingsProp,
 }: PaymentModalProps) {
-  // FIX: use prop settings if passed (from parent), otherwise fetch internally.
-  // On fetch failure, fall back to FALLBACK_SETTINGS — no infinite spinner.
-  const [settings, setSettings]         = useState<AdminPaymentSettings>(settingsProp ?? FALLBACK_SETTINGS);
+  const [settings, setSettings]               = useState<AdminPaymentSettings>(settingsProp ?? FALLBACK_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(!settingsProp);
-  const [method, setMethod]             = useState<'auto' | 'manual' | 'flutterwave'>('auto');
 
   useEffect(() => {
     if (!isOpen || settingsProp) return;
     setLoadingSettings(true);
     PaymentService.getAdminSettings()
       .then(s => setSettings(s))
-      .catch(() => setSettings(FALLBACK_SETTINGS)) // never null — always usable
+      .catch(() => setSettings(FALLBACK_SETTINGS))
       .finally(() => setLoadingSettings(false));
   }, [isOpen, settingsProp]);
 
@@ -446,17 +444,10 @@ export default function PaymentModal({
   const amountUSD = getAmountUSD(plan, settings);
   const amountNGN = Math.round(amountUSD * settings.ngnPerUSD);
 
-  const resolvedMethod: 'manual' | 'flutterwave' =
-    method === 'manual'      ? 'manual'
-    : method === 'flutterwave' ? 'flutterwave'
-    : isNigeria               ? 'manual'
-    : 'flutterwave';
-
-  const showFlutterwaveToggle = settings.flutterwaveEnabled;
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <div>
@@ -464,7 +455,9 @@ export default function PaymentModal({
               {getPlanLabel(plan)}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              ${amountUSD} · ≈ ₦{amountNGN.toLocaleString()}
+              {isNigeria
+                ? `₦${amountNGN.toLocaleString()} · Bank Transfer`
+                : `$${amountUSD} · Flutterwave`}
             </p>
           </div>
           <button
@@ -475,49 +468,20 @@ export default function PaymentModal({
           </button>
         </div>
 
-        {/* Method switcher */}
+        {/* Payment method badge */}
         <div className="px-5 pt-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMethod('manual')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
-                resolvedMethod === 'manual'
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-400 text-green-700 dark:text-green-300'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400'
-              }`}
-            >
-              <FiBriefcase size={12} /> Bank Transfer
-              {isNigeria && resolvedMethod === 'manual' && (
-                <span className="ml-1 px-1.5 py-0.5 bg-green-600 text-white rounded-full text-[10px]">NG</span>
-              )}
-            </button>
-
-            {showFlutterwaveToggle && (
-              <button
-                onClick={() => setMethod('flutterwave')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
-                  resolvedMethod === 'flutterwave'
-                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-400 text-primary-700 dark:text-primary-300'
-                    : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400'
-                }`}
-              >
-                <FiCreditCard size={12} /> Card / Mobile Money
-              </button>
-            )}
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+            isNigeria
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
+              : 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800'
+          }`}>
+            {isNigeria ? '🇳🇬 Nigerian Bank Transfer' : '🌍 Flutterwave — Card / Mobile Money'}
           </div>
-
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-2 text-center">
-            {resolvedMethod === 'manual'
-              ? isNigeria
-                ? '🇳🇬 Nigerian bank transfer — pay manually, admin confirms.'
-                : 'Bank transfer — pay manually, admin confirms within a few hours.'
-              : '🌍 Instant payment via Flutterwave — cards, USSD & mobile money.'}
-          </p>
         </div>
 
         {/* Flow body */}
         <div className="p-5">
-          {resolvedMethod === 'manual' ? (
+          {isNigeria ? (
             <ManualTransferFlow
               settings={settings}
               plan={plan}
@@ -540,6 +504,7 @@ export default function PaymentModal({
             />
           )}
         </div>
+
       </div>
     </div>
   );
