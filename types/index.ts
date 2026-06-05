@@ -1,9 +1,13 @@
 import type { ReactNode } from 'react';
 
-// ─── User & Auth ────────────────────────────────────────────────────────────
+// ─── User & Auth ─────────────────────────────────────────────────────────────
 
-export type UserRole = 'user' | 'employer' | 'admin';
-export type UserTier = 'free' | 'premium' | 'premium-annual' | 'employer-free' | 'employer-pro' | 'employer-enterprise' | 'employer-growth' | 'employer-scale';
+export type UserRole = 'user' | 'freelancer' | 'employer' | 'moderator' | 'admin';
+export type UserTier =
+  | 'free' | 'premium' | 'premium-annual'
+  | 'employer-free' | 'employer-pro' | 'employer-enterprise'
+  | 'employer-growth' | 'employer-scale'
+  | 'freelancer-free' | 'freelancer-pro';
 
 export interface AppUser {
   uid: string;
@@ -18,17 +22,83 @@ export interface AppUser {
   updatedAt?: unknown;
   provider: string;
   employerTier?: string;
+  freelancerTier?: string;
+  country?: string;
+  // Profile extras
+  bio?: string;
+  phone?: string;
+  website?: string;
+  linkedin?: string;
+  twitter?: string;
+  skills?: string[];
+  // Verification
+  isVerified?: boolean;
+  employerVerified?: boolean;
+  freelancerVerified?: boolean;
+  // Moderator permissions
+  moderatorPermissions?: ModeratorPermission[];
+  // Premium
+  premiumExpiresAt?: unknown;
+  premiumPlan?: string;
+  // Settings
+  notifications?: UserNotificationSettings;
+  privacySettings?: UserPrivacySettings;
 }
 
-// ─── Job ────────────────────────────────────────────────────────────────────
+export interface UserNotificationSettings {
+  emailJobAlerts: boolean;
+  emailApplicationUpdates: boolean;
+  emailGigUpdates: boolean;
+  emailNewsletter: boolean;
+  pushNotifications: boolean;
+}
+
+export interface UserPrivacySettings {
+  profileVisible: boolean;
+  showEmail: boolean;
+  showPhone: boolean;
+}
+
+// ─── Moderator ───────────────────────────────────────────────────────────────
+
+export type ModeratorPermission =
+  | 'review_jobs'
+  | 'review_gigs'
+  | 'review_employers'
+  | 'manage_reports'
+  | 'manage_disputes'
+  | 'review_kyc'
+  | 'manage_blog'
+  | 'manage_scholarships'
+  | 'ban_users';
+
+export interface ModeratorLog {
+  id: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: string;
+  targetId: string;
+  targetType: 'job' | 'gig' | 'user' | 'report' | 'dispute' | 'employer';
+  note?: string;
+  createdAt: unknown;
+}
+
+// ─── Job ─────────────────────────────────────────────────────────────────────
 
 export interface Job {
   id: string;
   title: string;
   company: string;
   location: string;
-  type: string;           // Full-time | Part-time | Contract | Remote
+  country?: string;
+  city?: string;
+  type: string;
+  category?: string;
+  experienceLevel?: string;
   salary?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  currency?: string;
   description: string;
   requirements?: string[];
   benefits?: string[];
@@ -39,15 +109,202 @@ export interface Job {
   isRemote?: boolean;
   isFeatured?: boolean;
   isPromoted?: boolean;
-  status: 'active' | 'closed' | 'draft';
+  status: 'active' | 'closed' | 'draft' | 'pending_review';
   employerId?: string;
   applicationCount?: number;
+  views?: number;
   externalUrl?: string;
   org?: string;
-  country?: string;
+  // Moderator
+  reviewedBy?: string;
+  reviewedAt?: unknown;
+  rejectionReason?: string;
 }
 
-// ─── Scholarship ─────────────────────────────────────────────────────────────
+// ─── Freelance Gig ────────────────────────────────────────────────────────────
+
+export type GigStatus = 'open' | 'in_progress' | 'completed' | 'cancelled' | 'disputed' | 'pending_review';
+export type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+
+export interface Gig {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  skills: string[];
+  budgetMin: number;
+  budgetMax: number;
+  currency: string;
+  duration: string; // e.g. "1-2 weeks"
+  country: string;
+  isRemote: boolean;
+  clientId: string;
+  clientName: string;
+  clientPhoto?: string;
+  clientVerified?: boolean;
+  status: GigStatus;
+  proposalCount?: number;
+  isFeatured?: boolean;
+  attachments?: string[];
+  createdAt: unknown;
+  updatedAt: unknown;
+  deadline?: string;
+  // Winner
+  assignedFreelancerId?: string;
+  assignedProposalId?: string;
+  // Moderator
+  reviewedBy?: string;
+  rejectionReason?: string;
+}
+
+export interface Proposal {
+  id: string;
+  gigId: string;
+  freelancerId: string;
+  freelancerName: string;
+  freelancerPhoto?: string;
+  freelancerTier?: string;
+  coverLetter: string;
+  bidAmount: number;
+  currency: string;
+  deliveryDays: number;
+  status: ProposalStatus;
+  createdAt: unknown;
+  updatedAt?: unknown;
+}
+
+// ─── Escrow ──────────────────────────────────────────────────────────────────
+
+export type EscrowStatus =
+  | 'pending_funding'
+  | 'funded'
+  | 'in_progress'
+  | 'submitted'
+  | 'approved'
+  | 'released'
+  | 'disputed'
+  | 'refunded'
+  | 'cancelled';
+
+export interface EscrowTransaction {
+  id: string;
+  gigId: string;
+  gigTitle: string;
+  clientId: string;
+  clientName: string;
+  freelancerId: string;
+  freelancerName: string;
+  proposalId: string;
+  amount: number;
+  platformFeePercent: number;
+  platformFee: number;
+  freelancerAmount: number;
+  currency: string;
+  status: EscrowStatus;
+  paymentMethod: 'bank_transfer' | 'flutterwave' | 'paystack';
+  paymentReference?: string;
+  flwTransactionId?: string;
+  fundedAt?: unknown;
+  workSubmittedAt?: unknown;
+  approvedAt?: unknown;
+  releasedAt?: unknown;
+  disputeReason?: string;
+  disputedAt?: unknown;
+  resolvedAt?: unknown;
+  resolvedBy?: string;
+  milestones?: EscrowMilestone[];
+  createdAt: unknown;
+  updatedAt: unknown;
+}
+
+export interface EscrowMilestone {
+  id: string;
+  title: string;
+  amount: number;
+  status: 'pending' | 'submitted' | 'approved' | 'released';
+  dueDate?: string;
+  submittedAt?: unknown;
+  approvedAt?: unknown;
+}
+
+// ─── Portfolio ────────────────────────────────────────────────────────────────
+
+export interface PortfolioItem {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  projectUrl?: string;
+  category: string;
+  tags?: string[];
+  createdAt: unknown;
+}
+
+// ─── Skill Verification ───────────────────────────────────────────────────────
+
+export type SkillBadgeStatus = 'pending' | 'verified' | 'rejected';
+
+export interface SkillBadge {
+  id: string;
+  userId: string;
+  skill: string;
+  category: string;
+  status: SkillBadgeStatus;
+  verifiedBy?: string; // admin/moderator uid
+  verifiedAt?: unknown;
+  rejectionReason?: string;
+  evidence?: string; // link to portfolio/certificate
+  createdAt: unknown;
+}
+
+// ─── Resume ──────────────────────────────────────────────────────────────────
+
+export interface Resume {
+  id?: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  summary?: string;
+  experience: ResumeExperience[];
+  education: ResumeEducation[];
+  skills: string[];
+  certifications?: ResumeCertification[];
+  languages?: string[];
+  updatedAt?: unknown;
+}
+
+export interface ResumeExperience {
+  id: string;
+  company: string;
+  role: string;
+  startDate: string;
+  endDate?: string;
+  current: boolean;
+  description: string;
+}
+
+export interface ResumeEducation {
+  id: string;
+  institution: string;
+  degree: string;
+  field: string;
+  startYear: string;
+  endYear?: string;
+  current: boolean;
+}
+
+export interface ResumeCertification {
+  id: string;
+  name: string;
+  issuer: string;
+  year: string;
+  url?: string;
+}
+
+// ─── Scholarship ──────────────────────────────────────────────────────────────
 
 export interface Scholarship {
   id: string;
@@ -61,12 +318,13 @@ export interface Scholarship {
   logo?: string;
   postedAt: unknown;
   country?: string;
-  level?: string;         // Undergraduate | Postgraduate | PhD
+  level?: string;
   status: 'active' | 'closed';
   externalUrl?: string;
   org?: string;
   location?: string;
   type?: string;
+  isFeatured?: boolean;
 }
 
 // ─── Blog ────────────────────────────────────────────────────────────────────
@@ -97,9 +355,12 @@ export interface BlogComment {
   createdAt: unknown;
 }
 
-// ─── Application ─────────────────────────────────────────────────────────────
+// ─── Application ──────────────────────────────────────────────────────────────
 
-export type ApplicationStatus = 'Submitted' | 'Under Review' | 'Under review' | 'Shortlisted' | 'Rejected' | 'Accepted' | 'Interview' | 'Viewed' | 'Contacted' | 'New';
+export type ApplicationStatus =
+  | 'Submitted' | 'Under Review' | 'Under review'
+  | 'Shortlisted' | 'Rejected' | 'Accepted'
+  | 'Interview' | 'Viewed' | 'Contacted' | 'New';
 export type ApplicationType = 'job' | 'scholarship';
 
 export interface Application {
@@ -125,23 +386,118 @@ export interface Application {
 export interface SavedItem {
   id: string;
   userId: string;
-  type: 'job' | 'scholarship';
+  type: 'job' | 'scholarship' | 'gig';
   jobId?: string;
   scholarshipId?: string;
-  itemData: Job | Scholarship;
+  gigId?: string;
+  itemData: Job | Scholarship | Gig;
   savedAt: unknown;
 }
 
-// ─── Employer ────────────────────────────────────────────────────────────────
+// ─── Report / Moderation ─────────────────────────────────────────────────────
 
-export interface EmployerStats {
-  activeJobs: number;
-  totalApplications: number;
-  promotedJobs: number;
-  views: number;
+export type ReportType = 'spam' | 'scam' | 'inappropriate' | 'fake_employer' | 'harassment' | 'other';
+export type ReportStatus = 'open' | 'under_review' | 'resolved' | 'dismissed';
+
+export interface Report {
+  id: string;
+  reportedBy: string;
+  reportedByName: string;
+  targetId: string;
+  targetType: 'job' | 'gig' | 'user' | 'employer';
+  type: ReportType;
+  description: string;
+  status: ReportStatus;
+  assignedTo?: string;
+  resolution?: string;
+  createdAt: unknown;
+  updatedAt?: unknown;
 }
 
-// ─── Salary ──────────────────────────────────────────────────────────────────
+// ─── Dispute ─────────────────────────────────────────────────────────────────
+
+export type DisputeStatus = 'open' | 'under_review' | 'resolved_client' | 'resolved_freelancer' | 'escalated';
+
+export interface Dispute {
+  id: string;
+  escrowId: string;
+  gigId: string;
+  gigTitle: string;
+  clientId: string;
+  clientName: string;
+  freelancerId: string;
+  freelancerName: string;
+  raisedBy: 'client' | 'freelancer';
+  reason: string;
+  evidence?: string[];
+  status: DisputeStatus;
+  assignedModerator?: string;
+  resolution?: string;
+  resolvedAt?: unknown;
+  createdAt: unknown;
+}
+
+// ─── KYC / Employer Verification ─────────────────────────────────────────────
+
+export type KycStatus = 'pending' | 'approved' | 'rejected';
+
+export interface EmployerKyc {
+  id: string;
+  employerId: string;
+  employerName: string;
+  companyName: string;
+  cacNumber?: string;
+  taxId?: string;
+  websiteUrl?: string;
+  documentUrl?: string;
+  country: string;
+  status: KycStatus;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  createdAt: unknown;
+  updatedAt?: unknown;
+}
+
+// ─── Platform Settings (Admin-controlled) ────────────────────────────────────
+
+export interface PlatformFeatureFlags {
+  freelanceEnabled: boolean;
+  escrowEnabled: boolean;
+  scholarshipsEnabled: boolean;
+  blogEnabled: boolean;
+  salaryPortalEnabled: boolean;
+  skillBadgesEnabled: boolean;
+  resumeBuilderEnabled: boolean;
+  aiMatchingEnabled: boolean;
+  servicesEnabled: boolean;
+  kycEnabled: boolean;
+  referralsEnabled: boolean;
+}
+
+export interface PlatformSettings {
+  siteName: string;
+  siteTagline: string;
+  maintenanceMode: boolean;
+  allowNewRegistrations: boolean;
+  requireJobApproval: boolean;
+  requireGigApproval: boolean;
+  escrowFeePercent: number;
+  featuredJobDays: number;
+  features: PlatformFeatureFlags;
+  updatedAt?: unknown;
+  updatedBy?: string;
+}
+
+// ─── Payment ─────────────────────────────────────────────────────────────────
+
+export interface PaymentPlan {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  features: string[];
+  recommended?: boolean;
+}
 
 export interface SalaryData {
   role: string;
@@ -153,31 +509,40 @@ export interface SalaryData {
   industry: string;
 }
 
-// ─── Payments ────────────────────────────────────────────────────────────────
+export interface EmployerStats {
+  activeJobs: number;
+  totalApplications: number;
+  promotedJobs: number;
+  views: number;
+}
 
-export interface PaymentPlan {
+// ─── Job Alert ────────────────────────────────────────────────────────────────
+
+export interface JobAlert {
   id: string;
-  name: string;
-  price: number;
-  currency: string;
-  features: string[];
-  recommended?: boolean;
+  userId: string;
+  keywords: string;
+  country?: string;
+  type?: string;
+  category?: string;
+  isRemote?: boolean;
+  createdAt: unknown;
+}
+
+// ─── Referral ────────────────────────────────────────────────────────────────
+
+export interface Referral {
+  id: string;
+  referrerId: string;
+  referredEmail: string;
+  jobId?: string;
+  status: 'pending' | 'signed_up' | 'rewarded';
+  createdAt: unknown;
 }
 
 // ─── Component Props ─────────────────────────────────────────────────────────
 
-export interface PageParams {
-  params: { id: string };
-}
-
-export interface CompanyParams {
-  params: { company: string };
-}
-
-export interface WithChildren {
-  children: ReactNode;
-}
-
-export interface WithClassName {
-  className?: string;
-}
+export interface PageParams { params: { id: string } }
+export interface CompanyParams { params: { company: string } }
+export interface WithChildren { children: ReactNode }
+export interface WithClassName { className?: string }
