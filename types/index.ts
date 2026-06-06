@@ -23,6 +23,7 @@ export interface AppUser {
   provider: string;
   employerTier?: string;
   freelancerTier?: string;
+  /** ISO country name e.g. "Nigeria", "Ghana". Stored at registration & editable in settings. */
   country?: string;
   // Profile extras
   bio?: string;
@@ -43,6 +44,8 @@ export interface AppUser {
   // Settings
   notifications?: UserNotificationSettings;
   privacySettings?: UserPrivacySettings;
+  /** Freelancer payout details — Nigerian users: bank only. Others: PayPal / crypto. */
+  payoutDetails?: FreelancerPayoutDetails;
 }
 
 export interface UserNotificationSettings {
@@ -57,6 +60,56 @@ export interface UserPrivacySettings {
   profileVisible: boolean;
   showEmail: boolean;
   showPhone: boolean;
+}
+
+// ─── Freelancer Payout Details ────────────────────────────────────────────────
+// Nigerian freelancers fill bankName/accountName/accountNumber.
+// International freelancers fill paypalEmail and/or cryptoAddress + cryptoNetwork.
+
+export type CryptoNetwork = 'ethereum' | 'bnb';
+
+export interface FreelancerPayoutDetails {
+  // Nigerian bank transfer
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  // International — PayPal
+  paypalEmail?: string;
+  // International — Crypto (USDT / USDC)
+  cryptoAddress?: string;
+  cryptoNetwork?: CryptoNetwork; // 'ethereum' | 'bnb'
+  updatedAt?: unknown;
+}
+
+// ─── Withdrawal Request ───────────────────────────────────────────────────────
+// Freelancers request a payout. Admin sees it, pays, and marks as paid.
+
+export type WithdrawalStatus = 'pending' | 'processing' | 'paid' | 'rejected';
+export type WithdrawalMethod = 'bank_transfer' | 'paypal' | 'crypto_usdt' | 'crypto_usdc';
+
+export interface WithdrawalRequest {
+  id: string;
+  freelancerId: string;
+  freelancerName: string;
+  freelancerEmail: string;
+  freelancerCountry: string;
+  amountUSD: number;
+  /** NGN equivalent — only relevant for Nigerian users */
+  amountNGN?: number;
+  method: WithdrawalMethod;
+  // Snapshot of payout details at request time
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  paypalEmail?: string;
+  cryptoAddress?: string;
+  cryptoNetwork?: CryptoNetwork;
+  status: WithdrawalStatus;
+  adminNote?: string;
+  rejectionReason?: string;
+  requestedAt: unknown;
+  processedAt?: unknown;
+  processedBy?: string;
 }
 
 // ─── Moderator ───────────────────────────────────────────────────────────────
@@ -115,7 +168,6 @@ export interface Job {
   views?: number;
   externalUrl?: string;
   org?: string;
-  // Moderator
   reviewedBy?: string;
   reviewedAt?: unknown;
   rejectionReason?: string;
@@ -135,7 +187,7 @@ export interface Gig {
   budgetMin: number;
   budgetMax: number;
   currency: string;
-  duration: string; // e.g. "1-2 weeks"
+  duration: string;
   country: string;
   isRemote: boolean;
   clientId: string;
@@ -149,10 +201,8 @@ export interface Gig {
   createdAt: unknown;
   updatedAt: unknown;
   deadline?: string;
-  // Winner
   assignedFreelancerId?: string;
   assignedProposalId?: string;
-  // Moderator
   reviewedBy?: string;
   rejectionReason?: string;
 }
@@ -201,7 +251,7 @@ export interface EscrowTransaction {
   freelancerAmount: number;
   currency: string;
   status: EscrowStatus;
-  paymentMethod: 'bank_transfer' | 'flutterwave' | 'paystack';
+  paymentMethod: 'bank_transfer' | 'flutterwave' | 'crypto';
   paymentReference?: string;
   flwTransactionId?: string;
   fundedAt?: unknown;
@@ -251,10 +301,10 @@ export interface SkillBadge {
   skill: string;
   category: string;
   status: SkillBadgeStatus;
-  verifiedBy?: string; // admin/moderator uid
+  verifiedBy?: string;
   verifiedAt?: unknown;
   rejectionReason?: string;
-  evidence?: string; // link to portfolio/certificate
+  evidence?: string;
   createdAt: unknown;
 }
 
