@@ -1,6 +1,5 @@
 // src/services/providers/firebase/auth.ts
 // ─── Firebase Auth Provider ───────────────────────────────────────────────────
-// All Firebase auth logic lives here. Nothing outside this folder touches Firebase.
 
 import {
   createUserWithEmailAndPassword,
@@ -11,7 +10,6 @@ import {
   onAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail,
-  UserCredential,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/firebase/config';
@@ -26,44 +24,64 @@ export const AuthService = {
     return onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) { callback(null); return; }
       try {
-        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userRef  = doc(db, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-          const profile = userSnap.data();
+          const p = userSnap.data();
           callback({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email ?? '',
-            name: profile.name || firebaseUser.displayName || 'User',
-            role: profile.role || 'user',
-            company: profile.company || null,
-            tier: profile.tier || 'free',
-            photoURL: firebaseUser.photoURL || profile.photoURL,
-            createdAt: profile.createdAt,
-            updatedAt: profile.updatedAt,
-            provider: profile.provider || 'password',
-          });
+            uid:         firebaseUser.uid,
+            email:       firebaseUser.email ?? '',
+            name:        p.name || firebaseUser.displayName || 'User',
+            role:        p.role        || 'user',
+            company:     p.company     || null,
+            tier:        p.tier        || 'free',
+            photoURL:    firebaseUser.photoURL || p.photoURL,
+            createdAt:   p.createdAt,
+            updatedAt:   p.updatedAt,
+            provider:    p.provider    || 'password',
+            country:     p.country     || '',
+            // payout details for freelancers
+            payoutDetails: p.payoutDetails || undefined,
+            // premium
+            premiumExpiresAt: p.premiumExpiresAt,
+            premiumPlan:      p.premiumPlan,
+            // extra profile
+            bio:      p.bio,
+            phone:    p.phone,
+            website:  p.website,
+            linkedin: p.linkedin,
+            skills:   p.skills,
+            isVerified:       p.isVerified,
+            employerVerified: p.employerVerified,
+            moderatorPermissions: p.moderatorPermissions,
+            notifications:    p.notifications,
+            privacySettings:  p.privacySettings,
+          } as AppUser);
         } else {
+          // First-time Google / social login — create a basic profile
           const newProfile = {
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || 'User',
-            role: 'user' as UserRole,
-            tier: 'free',
-            photoURL: firebaseUser.photoURL,
-            provider: firebaseUser.providerData[0]?.providerId || 'password',
+            email:     firebaseUser.email,
+            name:      firebaseUser.displayName || 'User',
+            role:      'user' as UserRole,
+            tier:      'free',
+            country:   '',
+            photoURL:  firebaseUser.photoURL,
+            provider:  firebaseUser.providerData[0]?.providerId || 'password',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           };
           await setDoc(userRef, newProfile);
           callback({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email ?? '',
-            name: newProfile.name,
-            role: 'user',
-            company: null,
-            tier: 'free',
+            uid:      firebaseUser.uid,
+            email:    firebaseUser.email ?? '',
+            name:     newProfile.name,
+            role:     'user',
+            company:  null,
+            tier:     'free',
+            country:  '',
             photoURL: firebaseUser.photoURL,
             provider: newProfile.provider,
-          });
+          } as AppUser);
         }
       } catch (err) {
         console.error('Auth state change error:', err);
@@ -72,19 +90,39 @@ export const AuthService = {
     });
   },
 
-  async signup(email: string, password: string, name: string, role: UserRole = 'user', company: string | null = null) {
+  /**
+   * Email/password sign-up.
+   * country is required — it drives payment routing throughout the app.
+   */
+  async signup(
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole = 'user',
+    company: string | null = null,
+    country: string = '',
+  ) {
     const { user: fu } = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(fu, { displayName: name });
-    const profile = {
-      name, email, role,
-      company: role === 'employer' ? company : null,
-      tier: role === 'employer' ? 'employer-free' : 'free',
-      photoURL: null,
-      provider: 'password',
+
+    const tierMap: Partial<Record<UserRole, string>> = {
+      employer:   'employer-free',
+      freelancer: 'freelancer-free',
+    };
+
+    await setDoc(doc(db, 'users', fu.uid), {
+      name,
+      email,
+      role,
+      country,
+      company:   role === 'employer' ? company : null,
+      tier:      tierMap[role] || 'free',
+      photoURL:  null,
+      provider:  'password',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    };
-    await setDoc(doc(db, 'users', fu.uid), profile);
+    });
+
     return { success: true, user: fu };
   },
 
@@ -98,12 +136,13 @@ export const AuthService = {
     const userRef = doc(db, 'users', fu.uid);
     if (!(await getDoc(userRef)).exists()) {
       await setDoc(userRef, {
-        name: fu.displayName || 'User',
-        email: fu.email,
-        role: 'user',
-        tier: 'free',
-        photoURL: fu.photoURL,
-        provider: 'google',
+        name:      fu.displayName || 'User',
+        email:     fu.email,
+        role:      'user',
+        tier:      'free',
+        country:   '', // user should update in settings after first login
+        photoURL:  fu.photoURL,
+        provider:  'google',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
