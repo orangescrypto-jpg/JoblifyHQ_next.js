@@ -233,9 +233,6 @@ export default function AdminPlatformSettings() {
                   <h3 className="font-medium text-gray-900 dark:text-white">Paystack</h3>
                   <p className="text-xs text-gray-500">Best for Nigerian cards and bank payments</p>
                 </div>
-                <button onClick={() => setPay('paystackEnabled', !payment.paystackEnabled)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${payment.paystackEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${payment.paystackEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
               <p className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700 rounded p-2">Configure via <code className="font-mono">NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY</code> env variable</p>
