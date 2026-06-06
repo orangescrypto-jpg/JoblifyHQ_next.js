@@ -224,7 +224,7 @@ export default function AdminDashboard() {
                               <p className="text-xs text-gray-400 mt-1">Plan: <strong className="text-gray-700 dark:text-gray-300">{p.plan}</strong> · Method: {p.method.replace('_',' ')}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-lg text-gray-900 dark:text-white">₦{p.amountNGN.toLocaleString()}</p>
+                              <p className="font-bold text-lg text-gray-900 dark:text-white">₦{(p.amountNGN ?? 0).toLocaleString()}</p>
                               <p className="text-xs text-gray-500">${p.amountUSD}</p>
                             </div>
                           </div>
