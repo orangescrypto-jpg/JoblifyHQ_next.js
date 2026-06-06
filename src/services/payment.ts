@@ -10,5 +10,4 @@ export type {
   PaymentMethod,
   PaymentPlan,
   AdminPaymentSettings,
-  DEFAULT_SETTINGS,
 } from '@/src/services/providers/firebase/payment';
