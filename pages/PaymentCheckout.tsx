@@ -23,7 +23,7 @@ export default function PaymentCheckout() {
   const { user }                   = useAuth();
   const router                     = useRouter();
   const searchParams               = useSearchParams();
-  const plan                       = (searchParams.get('plan') || 'premium') as PaymentPlan;
+  const plan                       = (searchParams?.get('plan') || 'premium') as PaymentPlan;
   const [settings, setSettings]    = useState<AdminPaymentSettings | null>(null);
   const [payment, setPayment]      = useState<PendingPayment | null>(null);
   const [loading, setLoading]      = useState(false);
@@ -80,7 +80,7 @@ export default function PaymentCheckout() {
     const handler = (window as any).PaystackPop.setup({
       key:    process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
       email:  user.email,
-      amount: payment.amountNGN * 100, // kobo
+      amount: (payment.amountNGN ?? 0) * 100, // kobo
       currency: 'NGN',
       ref:    payment.reference,
       metadata: { planKey: plan, userId: user.uid, paymentId: payment.id },
@@ -209,12 +209,12 @@ export default function PaymentCheckout() {
         )}
 
         {/* Bank transfer instructions */}
-        {payment && payment.paymentMethod === 'bank_transfer' && !claimed && (
+        {payment && payment.method === 'bank_transfer' && !claimed && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white">Bank Transfer Instructions</h3>
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-sm">
               <p className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Transfer exactly:</p>
-              <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-200">₦{payment.amountNGN.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-200">₦{(payment.amountNGN ?? 0).toLocaleString()}</p>
               <div className="mt-3 space-y-1 text-yellow-800 dark:text-yellow-300">
                 <p>🏦 <strong>Bank:</strong> {settings.bankName}</p>
                 <p>👤 <strong>Account Name:</strong> {settings.accountName}</p>
@@ -246,7 +246,7 @@ export default function PaymentCheckout() {
         )}
 
         {/* Flutterwave pay button */}
-        {payment && payment.paymentMethod === 'flutterwave' && (
+        {payment && payment.method === 'flutterwave' && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">Click below to complete your payment via Flutterwave</p>
             <button onClick={launchFlutterwave}
@@ -257,12 +257,12 @@ export default function PaymentCheckout() {
         )}
 
         {/* Paystack pay button */}
-        {payment && payment.paymentMethod === 'paystack' && (
+        {payment && payment.method === 'paystack' && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">Click below to complete your payment via Paystack</p>
             <button onClick={launchPaystack}
               className="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition">
-              Pay ₦{payment.amountNGN.toLocaleString()} via Paystack
+              Pay ₦{(payment.amountNGN ?? 0).toLocaleString()} via Paystack
             </button>
           </div>
         )}
