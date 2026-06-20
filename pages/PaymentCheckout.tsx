@@ -8,14 +8,15 @@ import type { AdminPaymentSettings, PaymentPlan, PendingPayment } from '@/src/se
 declare const FlutterwaveCheckout: any;
 
 const PLAN_NAMES: Record<PaymentPlan, string> = {
-  'premium':         'Job Seeker Premium (Monthly)',
-  'premium-annual':  'Job Seeker Premium (Annual)',
-  'employer-growth': 'Employer Growth',
-  'employer-scale':  'Employer Scale',
-  'freelancer-pro':  'Freelancer Pro',
-  'boost':           'Profile Boost',
-  'featured_job':    'Featured Job Listing',
-  'featured_gig':    'Featured Gig Listing',
+  'premium':           'Job Seeker Premium (Monthly)',
+  'premium-annual':    'Job Seeker Premium (Annual)',
+  'employer-growth':   'Employer Growth',
+  'employer-scale':    'Employer Scale',
+  'freelancer-pro':    'Freelancer Pro',
+  'boost':             'Profile Boost',
+  'featured_job':      'Featured Job Listing',
+  'featured_gig':      'Featured Gig Listing',
+  'scholarship_boost': 'Scholarship Boost',
 };
 
 export default function PaymentCheckout() {
@@ -109,6 +110,7 @@ export default function PaymentCheckout() {
       'employer-growth': settings.employerGrowthUSD, 'employer-scale': settings.employerScaleUSD,
       'freelancer-pro': settings.freelancerProUSD, 'boost': settings.boostUSD,
       'featured_job': settings.featuredJobUSD, 'featured_gig': settings.featuredGigUSD,
+      'scholarship_boost': settings.scholarshipBoostUSD,
     };
     return m[plan] || 0;
   })();
